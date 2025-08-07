@@ -7,6 +7,7 @@ import Section from '@/components/Section'
 import InfiniteScrollTrigger from '@/components/InfiniteScrollTrigger'
 import { Search, Users } from 'lucide-react'
 import { useInfiniteCreators } from '@/hooks/useInfiniteCreators'
+import { Creator } from '@/types/common'
 
 export default function CreatorsPage() {
   const [searchTerm, setSearchTerm] = useState('')

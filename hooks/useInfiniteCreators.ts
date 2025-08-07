@@ -1,22 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-
-interface Creator {
-  id: string
-  name: string
-  qtd: number | null
-  description: string | null
-  image: string | null
-  created_at: string | null
-  update_at: string | null
-}
-
-interface Pagination {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-  hasMore: boolean
-}
+import { Creator, Pagination } from '@/types/common'
 
 interface CreatorsResponse {
   creators: Creator[]

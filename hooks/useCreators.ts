@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react'
-
-interface Creator {
-  id: string
-  name: string
-  qtd: number | null
-  description: string | null
-  image: string | null
-  created_at: string | null
-  update_at: string | null
-}
+import { Creator } from '@/types/common'
 
 export function useCreators() {
   const [creators, setCreators] = useState<Creator[]>([])

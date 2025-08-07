@@ -93,7 +93,7 @@ export default function VideoSection() {
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
           <p className="text-red-500 text-sm">{error}</p>
           <button 
-            onClick={refetch}
+            onClick={() => refetch()}
             className="mt-2 text-red-500 hover:text-red-600 text-sm underline"
           >
             Tentar novamente

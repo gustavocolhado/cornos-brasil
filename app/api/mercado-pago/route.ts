@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { config } from 'dotenv';
 
 // Carrega as variáveis do .env

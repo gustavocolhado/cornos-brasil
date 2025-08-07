@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prismaClient from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     });
 
     // Criar o registro no banco de dados
-    await prismaClient.payment.create({
+    await prisma.payment.create({
       data: {
         userId,
         plan: paymentType,
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     });
 
     // Atualiza o registro na tabela paymentSession
-    await prismaClient.paymentSession.update({
+    await prisma.paymentSession.update({
       where: {
         id: sessionId,
       },

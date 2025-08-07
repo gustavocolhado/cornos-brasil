@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import prismaClient from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-10-28.acacia', // Use a versão correta
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
           }
 
           // Verificar se o pagamento já existe no banco de dados
-          const existingPayment = await prismaClient.payment.findUnique({
+          const existingPayment = await prisma.payment.findUnique({
             where: { preferenceId: session.id },
           });
 
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
           if (existingPayment) {
             // Atualizar o pagamento existente
-            await prismaClient.payment.update({
+            await prisma.payment.update({
               where: { preferenceId: session.id },
               data: {
                 status: 'paid',
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
           }
 
           // Atualizar a tabela PaymentSession usando preferenceId
-          await prismaClient.paymentSession.updateMany({
+          await prisma.paymentSession.updateMany({
             where: {
               preferenceId: session.id, // Corrigido para preferenceId
             },
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
           //console.log(`PaymentSession atualizado com sucesso para userId: ${userId}`);
 
           // Atualizar o usuário com status premium
-          await prismaClient.user.update({
+          await prisma.user.update({
             where: { id: userId },
             data: {
               premium: true,

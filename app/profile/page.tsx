@@ -26,6 +26,7 @@ import {
 import Header from '@/components/Header'
 import VideoCard from '@/components/VideoCard'
 import Footer from '@/components/Footer'
+import { formatDuration } from '@/utils/formatDuration'
 
 interface UserProfile {
   id: string
@@ -44,6 +45,7 @@ interface Video {
   title: string
   description: string
   url: string
+  videoUrl: string
   thumbnailUrl: string
   viewCount: number
   likesCount: number
@@ -51,6 +53,9 @@ interface Video {
   premium: boolean
   creator: string
   created_at: string
+  trailerUrl?: string
+  iframe?: boolean
+  category?: string[]
 }
 
 interface TabData {
@@ -475,7 +480,21 @@ export default function ProfilePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {likedVideos.map((video) => (
-                    <VideoCard key={video.id} video={video} />
+                    <VideoCard
+                      key={video.id}
+                      id={video.id}
+                      title={video.title}
+                      duration={formatDuration(video.duration)}
+                      thumbnailUrl={video.thumbnailUrl}
+                      videoUrl={video.videoUrl}
+                      trailerUrl={video.trailerUrl || undefined}
+                      isIframe={video.iframe}
+                      premium={video.premium}
+                      viewCount={video.viewCount}
+                      likesCount={video.likesCount}
+                      category={video.category}
+                      creator={video.creator || undefined}
+                    />
                   ))}
                 </div>
               )}
@@ -503,7 +522,21 @@ export default function ProfilePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {favoriteVideos.map((video) => (
-                    <VideoCard key={video.id} video={video} />
+                    <VideoCard
+                      key={video.id}
+                      id={video.id}
+                      title={video.title}
+                      duration={formatDuration(video.duration)}
+                      thumbnailUrl={video.thumbnailUrl}
+                      videoUrl={video.videoUrl}
+                      trailerUrl={video.trailerUrl || undefined}
+                      isIframe={video.iframe}
+                      premium={video.premium}
+                      viewCount={video.viewCount}
+                      likesCount={video.likesCount}
+                      category={video.category}
+                      creator={video.creator || undefined}
+                    />
                   ))}
                 </div>
               )}
@@ -531,7 +564,21 @@ export default function ProfilePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {historyVideos.map((video) => (
-                    <VideoCard key={video.id} video={video} />
+                    <VideoCard
+                      key={video.id}
+                      id={video.id}
+                      title={video.title}
+                      duration={formatDuration(video.duration)}
+                      thumbnailUrl={video.thumbnailUrl}
+                      videoUrl={video.videoUrl}
+                      trailerUrl={video.trailerUrl || undefined}
+                      isIframe={video.iframe}
+                      premium={video.premium}
+                      viewCount={video.viewCount}
+                      likesCount={video.likesCount}
+                      category={video.category}
+                      creator={video.creator || undefined}
+                    />
                   ))}
                 </div>
               )}

@@ -1,7 +1,7 @@
 // app/api/stripe/webhook/status/route.ts
 
 import { NextResponse } from 'next/server';
-import prismaClient from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

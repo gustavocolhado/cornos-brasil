@@ -3,8 +3,8 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    // Verificar conexão com banco
-    await prisma.$queryRaw`SELECT 1`
+    // Verificar conexão com banco (usando uma consulta simples para MongoDB)
+    await prisma.video.findFirst()
     
     // Verificar estatísticas básicas
     const videoCount = await prisma.video.count()

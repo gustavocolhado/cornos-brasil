@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Home, Video, Star, Tag, Grid3X3, Tv, Search, Users, Upload, ChevronDown } from 'lucide-react'
+import { X, Home, Video, Star, Tag, Grid, Tv, Search, Users, Upload, ChevronDown } from 'lucide-react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -17,7 +17,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { id: 'ThePornDude', icon: null, customIcon: '👤' },
     { id: 'Estrelas Pornô', icon: Star },
     { id: 'Tags', icon: Tag },
-    { id: 'Categorias', icon: Grid3X3 },
+    { id: 'Categorias', icon: Grid },
     { id: 'Canais', icon: Tv },
     { id: 'Termos Mais Buscados', icon: Search, hasDropdown: true },
     { id: 'Comunidade', icon: Users },

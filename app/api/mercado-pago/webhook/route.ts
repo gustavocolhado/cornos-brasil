@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prismaClient from '@/lib/prisma'; // Ajuste o caminho conforme necessário
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       }
 
       // Busca o pagamento correspondente na tabela Payment
-      const payment = await prismaClient.payment.findFirst({
+      const payment = await prisma.payment.findFirst({
         where: {
           paymentId: paymentId,
         },
@@ -55,13 +55,13 @@ export async function POST(request: Request) {
       }
 
       // Atualiza o status do pagamento na tabela Payment
-      await prismaClient.payment.updateMany({
+      await prisma.payment.updateMany({
         where: { paymentId: paymentId },
         data: { status: paymentStatus },
       });
 
       // Atualiza o status na tabela Affiliates
-      await prismaClient.affiliate.updateMany({
+      await prisma.affiliate.updateMany({
         where: { paymentId: paymentId },
         data: { status: paymentStatus },
       });
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       // console.log('Status dos afiliados atualizado com sucesso para o paymentId:', paymentId);
 
       // Atualiza a tabela PaymentSession
-      await prismaClient.paymentSession.updateMany({
+      await prisma.paymentSession.updateMany({
         where: {
           paymentId: paymentId,
         },
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       // console.log('PaymentSession atualizado com sucesso para userId:', payment.userId);
 
       // Atualiza o usuário associado na tabela User
-      const user = await prismaClient.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: {
           id: payment.userId,
         },
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
           expireDate: expireDate,
         };
 
-        await prismaClient.user.update({
+        await prisma.user.update({
           where: { id: user.id },
           data: updateData,
         });
