@@ -33,18 +33,31 @@ export async function POST(request: Request) {
       if (!payment) {
         console.warn('⚠️ Nenhum pagamento encontrado com o paymentId:', paymentId);
         
-        // Tentar buscar por preferenceId também
-        const paymentByPreference = await prisma.payment.findFirst({
+        // Listar todos os pagamentos para debug
+        const allPayments = await prisma.payment.findMany({
+          take: 10,
+          orderBy: { transactionDate: 'desc' }
+        });
+        
+        console.log('🔍 Últimos 10 pagamentos no banco:', allPayments.map(p => ({
+          paymentId: p.paymentId,
+          userId: p.userId,
+          plan: p.plan,
+          status: p.status,
+          transactionDate: p.transactionDate
+        })));
+        
+        // Tentar buscar por string também (caso o paymentId seja salvo como string)
+        const paymentAsString = await prisma.payment.findFirst({
           where: {
-            preferenceId: paymentId.toString(),
+            paymentId: paymentId as any,
           },
         });
 
-        if (paymentByPreference) {
-          console.log('✅ Pagamento encontrado por preferenceId:', paymentByPreference);
-          payment = paymentByPreference;
+        if (paymentAsString) {
+          console.log('✅ Pagamento encontrado como string:', paymentAsString);
+          payment = paymentAsString;
         } else {
-          console.error('❌ Pagamento não encontrado nem por paymentId nem por preferenceId:', paymentId);
           return NextResponse.json({ error: 'Nenhum pagamento encontrado com o paymentId.' }, { status: 404 });
         }
       }

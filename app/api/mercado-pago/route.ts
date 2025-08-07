@@ -48,19 +48,29 @@ export async function POST(request: Request) {
     const paymentStatus = paymentResponse.data.status;
 
     if (qrCodeUrl && paymentId) {
+      console.log('🔍 Criando pagamento no banco:', {
+        paymentId,
+        userId,
+        plan: paymentType,
+        amount,
+        status: paymentStatus
+      });
+
       // Adiciona um registro na tabela de pagamentos com o status
-      await prisma.payment.create({
+      const createdPayment = await prisma.payment.create({
         data: {
           userId: userId,
           plan: paymentType,
           amount: amount,
-          paymentId: paymentId,
+          paymentId: parseInt(paymentId.toString()), // Garantir que é número
           transactionDate: new Date(),
           userEmail: payerEmail,
           status: paymentStatus,
           ...(promotionCode && { promotionCode }),
         },
       });
+
+      console.log('✅ Pagamento criado no banco:', createdPayment);
 
       // Atualiza o registro existente na tabela paymentSession com o paymentId
       await prisma.paymentSession.update({
