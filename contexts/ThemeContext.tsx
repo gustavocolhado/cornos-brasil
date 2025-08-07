@@ -18,13 +18,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMounted(true)
     // Verificar se há tema salvo no localStorage
-    const savedTheme = localStorage.getItem('theme') as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
-    } else {
-      // Verificar preferência do sistema
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setTheme(prefersDark ? 'dark' : 'light')
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as Theme
+      if (savedTheme) {
+        setTheme(savedTheme)
+      } else {
+        // Verificar preferência do sistema
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        setTheme(prefersDark ? 'dark' : 'light')
+      }
     }
   }, [])
 

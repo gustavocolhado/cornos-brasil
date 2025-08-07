@@ -55,6 +55,8 @@ export default function LandingPage() {
     referrer: string;
   } | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Capturar dados da campanha da URL
   useEffect(() => {
@@ -182,8 +184,8 @@ export default function LandingPage() {
       answer: "Absolutamente! Temos milhares de vídeos exclusivos em qualidade HD, com conteúdo atualizado diariamente. Nossos usuários confirmam que vale cada centavo!"
     },
     {
-      question: "O preço é justo?",
-      answer: "Sim! Nossos preços são os mais competitivos do mercado. O plano de 3 meses custa apenas R$ 0,22 por dia - menos que um café!"
+      question: "Posso baixar os videos ?",
+      answer: "Sim, todos os membros que adquiriram qualquer plano possuem acesso completo e downloads ilimitados para todos os dispositivos.!"
     },
     {
       question: "É fácil de usar?",
@@ -198,8 +200,8 @@ export default function LandingPage() {
       answer: "Oferecemos suporte 24/7 através do chat e email. Nossa equipe está sempre pronta para ajudar com qualquer dúvida ou problema."
     },
     {
-      question: "Tenho que assinar por um longo prazo?",
-      answer: "Não! Temos planos flexíveis de 3 dias até vitalício. Você escolhe o que melhor se adapta às suas necessidades, sem compromisso."
+      question: "Tenho que assinar por um longo prazo ?",
+      answer: "Não! Temos planos flexíveis de 1 mês até vitalício. Você escolhe o que melhor se adapta às suas necessidades, sem compromisso."
     },
     {
       question: "Por que escolher vocês e não outro site?",
@@ -635,6 +637,13 @@ export default function LandingPage() {
     }
   };
 
+  const enableAudio = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      setAudioEnabled(true);
+    }
+  };
+
   // Auto-play do slider
   useEffect(() => {
     const interval = setInterval(() => {
@@ -649,7 +658,7 @@ export default function LandingPage() {
       {/* Header Responsivo */}
       <header className="w-full bg-black px-4 py-4 md:px-8 md:py-6">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-                     <div className="text-yellow-400 font-bold text-xl md:text-2xl"><Image src="/imgs/logo.png" alt="Vazadex" width={100} height={100} /></div>
+                     <div className="text-yellow-400 font-bold text-xl md:text-2xl"><Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} /></div>
           <div className="flex gap-2 md:gap-4">
             <Link href="/login" className="px-3 py-2 md:px-6 md:py-3 bg-black text-white border border-white rounded text-sm md:text-base font-bold hover:bg-white hover:text-black transition">ENTRAR</Link>
             <button 
@@ -663,8 +672,28 @@ export default function LandingPage() {
       </header>
 
       {/* Preview de Vídeos - Responsivo */}
-      <div className="w-full">
-        <video src="./cta.webm" className="w-full h-auto max-h-[500px] object-cover" autoPlay muted loop />
+      <div className="w-full relative">
+        <video 
+          ref={videoRef}
+          src="/cta.mp4" 
+          className="w-full h-auto max-h-[500px] object-cover" 
+          autoPlay 
+          muted 
+          loop 
+        />
+        
+        {/* Overlay para ativar áudio */}
+        {!audioEnabled && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="text-center flex flex-col items-center justify-center">
+              <div className="bg-red-600 hover:bg-red-700 text-white rounded-full w-14 p-4 mb-4 cursor-pointer transition-colors" onClick={enableAudio}>
+                <FaPlay className="text-2xl" />
+              </div>
+              <p className="text-white text-lg font-bold">Clique para ativar o áudio</p>
+              <p className="text-white text-sm opacity-80">Experimente o som do vídeo</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Chamada Principal - Responsivo */}
@@ -708,146 +737,14 @@ export default function LandingPage() {
              {/* Seção Promocional com Benefícios */}
        <div className="px-4 py-6 md:px-8 md:py-12">
          <div className="max-w-6xl mx-auto">
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-             {/* Slider com 9 Imagens */}
-             <div className="relative">
-               <div className="relative rounded-lg overflow-hidden">
-                 <div className="w-full h-96 md:h-[500px] bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-500/30 rounded-lg">
-                   {/* Container das imagens */}
-                   <div className="relative w-full h-full">
-                     {/* Imagem 1 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 0 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/01.jpg" 
-                         alt="Slide 1" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 0}
-                       />
-                     </div>
+           <div className="flex flex-col items-center justify-center">
+             <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-8">BENEFÍCIOS EXCLUSIVOS</h2>
+             <div className="flex flex-col items-center justify-center w-full max-w-4xl">
 
-                     {/* Imagem 2 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 1 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/02.jpg" 
-                         alt="Slide 2" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 1}
-                       />
-                     </div>
 
-                     {/* Imagem 3 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 2 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/03.jpg" 
-                         alt="Slide 3" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 2}
-                       />
-                     </div>
-
-                     {/* Imagem 4 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 3 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/04.jpg" 
-                         alt="Slide 4" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 3}
-                       />
-                     </div>
-
-                     {/* Imagem 5 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 4 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/05.jpg" 
-                         alt="Slide 5" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 4}
-                       />
-                     </div>
-
-                     {/* Imagem 6 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 5 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/06.jpg" 
-                         alt="Slide 6" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 5}
-                       />
-                     </div>
-
-                     {/* Imagem 7 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 6 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/07.jpg" 
-                         alt="Slide 7" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 6}
-                       />
-                     </div>
-
-                     {/* Imagem 8 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 7 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/08.jpg" 
-                         alt="Slide 8" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 7}
-                       />
-                     </div>
-
-                     {/* Imagem 9 */}
-                     <div className={`absolute inset-0 transition-opacity duration-500 ${currentSlide === 8 ? 'opacity-100' : 'opacity-0'}`}>
-                       <Image 
-                         src="/imgs/capas/09.jpg" 
-                         alt="Slide 9" 
-                         fill 
-                         className="object-cover"
-                         priority={currentSlide === 8}
-                       />
-                     </div>
-                   </div>
-
-                   {/* Setas de navegação */}
-                   <button 
-                     onClick={prevSlide}
-                     className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition z-10"
-                   >
-                     <FaChevronLeft className="text-sm" />
-                   </button>
-                   <button 
-                     onClick={nextSlide}
-                     className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition z-10"
-                   >
-                     <FaChevronRight className="text-sm" />
-                   </button>
-
-                   {/* Indicadores de slide */}
-                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-                     {Array.from({ length: 9 }, (_, index) => (
-                       <button
-                         key={index}
-                         onClick={() => goToSlide(index)}
-                         className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                           currentSlide === index ? 'bg-white' : 'bg-white/50'
-                         }`}
-                       />
-                     ))}
-                   </div>
-                 </div>
-               </div>
-             </div>
-
-             {/* Grid de Benefícios */}
-             <div className="bg-black p-6 md:p-8 rounded-lg">
-               <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-6">
+                            {/* Grid de Benefícios */}
+               <div className="bg-black p-6 md:p-8 rounded-lg w-full max-w-2xl mx-auto">
+                 <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-6 justify-items-center">
                  {/* Linha 1 */}
                  <div className="text-center">
                    <div className="bg-red-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -911,12 +808,13 @@ export default function LandingPage() {
                    <div className="bg-red-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                      <FaUsers className="text-white text-xl" />
                    </div>
-                   <p className="text-white text-sm font-medium">Acesso ao Canal do Telegram e ao Site</p>
+                   <p className="text-white text-sm font-medium">Acesso Completo ao Site e Telegram</p>
                  </div>
                </div>
              </div>
            </div>
          </div>
+       </div>
        </div>
 
 
@@ -989,6 +887,12 @@ export default function LandingPage() {
              ))}
            </div>
 
+           {/* Aviso sobre pagamento */}
+           <div className="text-center mt-6">
+             <p className="text-neutral-400 text-sm italic">
+               *Pagamento não é recorrente, só renove se quiser*
+             </p>
+           </div>
           
         </div>
       </div>
@@ -1087,22 +991,18 @@ export default function LandingPage() {
          <div className="max-w-6xl mx-auto">
            {/* Logo e Informações Principais */}
            <div className="text-center mb-8 md:mb-12">
-             <div className="flex justify-center items-center mb-6">
+             <div className="flex justify-center items-center">
                <div className="relative">
                  <Image 
                    src="/imgs/logo.png" 
-                   alt="Vazadex" 
-                   width={120} 
+                   alt="Cornos Brasil" 
+                   width={180} 
                    height={120}
-                   className="w-24 h-24 md:w-32 md:h-32"
+                   className="w-48 h-24"
                  />
-                 <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                   <FaFire className="text-white text-xs" />
-                 </div>
                </div>
              </div>
              
-             <h3 className="text-white font-bold text-xl md:text-2xl mb-2">Vazadex</h3>
              <p className="text-neutral-300 text-sm md:text-base mb-4">A melhor plataforma de conteúdo exclusivo</p>
              
              {/* Links Rápidos */}
@@ -1110,61 +1010,19 @@ export default function LandingPage() {
                <a href="#" className="text-neutral-400 hover:text-red-500 transition-colors text-sm md:text-base">Sobre Nós</a>
                <a href="#" className="text-neutral-400 hover:text-red-500 transition-colors text-sm md:text-base">Política de Privacidade</a>
                <a href="#" className="text-neutral-400 hover:text-red-500 transition-colors text-sm md:text-base">Termos de Uso</a>
-               <a href="https://t.me/@supvazadex" className="text-neutral-400 hover:text-red-500 transition-colors text-sm md:text-base">Suporte</a>
+               <a href="https://t.me/@SuporteAssinante" className="text-neutral-400 hover:text-red-500 transition-colors text-sm md:text-base">Suporte</a>
                <a href="#" className="text-neutral-400 hover:text-red-500 transition-colors text-sm md:text-base">Remoção de Conteúdos</a>
-             </div>
-           </div>
-           
-           {/* Badges de Confiança */}
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 md:mb-12">
-             <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 rounded-xl p-4 md:p-6 text-center">
-               <div className="flex justify-center mb-3">
-                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                 </div>
-               </div>
-               <h4 className="text-white font-bold text-sm md:text-base mb-1">COMPRA SEGURA</h4>
-               <p className="text-neutral-300 text-xs md:text-sm">Pagamentos 100% seguros e criptografados</p>
-             </div>
-             
-             <div className="bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-blue-500/30 rounded-xl p-4 md:p-6 text-center">
-               <div className="flex justify-center mb-3">
-                 <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                   </svg>
-                 </div>
-               </div>
-               <h4 className="text-white font-bold text-sm md:text-base mb-1">SATISFAÇÃO GARANTIDA</h4>
-               <p className="text-neutral-300 text-xs md:text-sm">Satisfação garantida ou seu dinheiro de volta</p>
-             </div>
-             
-             <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded-xl p-4 md:p-6 text-center">
-               <div className="flex justify-center mb-3">
-                 <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
-                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                   </svg>
-                 </div>
-               </div>
-               <h4 className="text-white font-bold text-sm md:text-base mb-1">PRIVACIDADE PROTEGIDA</h4>
-               <p className="text-neutral-300 text-xs md:text-sm">Seus dados estão 100% protegidos</p>
              </div>
            </div>
            
            {/* Copyright e Informações Legais */}
            <div className="border-t border-neutral-700 pt-6 md:pt-8">
              <div className="text-center mb-4">
-               <p className="text-white text-sm md:text-base font-medium">© 2025 Vazadex - Todos os Direitos Reservados</p>
+               <p className="text-white text-sm md:text-base font-medium">© 2025 Cornos Brasil - Todos os Direitos Reservados</p>
              </div>
              
              <p className="text-neutral-500 text-xs md:text-sm text-center leading-relaxed">
-               Todos os direitos reservados. É proibida a reprodução do conteúdo desta página em qualquer meio de comunicação, 
-               sem autorização escrita do Vazadex ou do detentor do copyright. Os textos e as imagens (fotos, vídeos, ilustrações, etc.) 
-               de todas as Atrações do Vazadex são protegidas pela LEI DO DIREITO AUTORAL, não sendo permitidas cópias ou divulgações 
-               por qualquer motivo ou justificativa, nem mesmo com autorização das(os) modelos. Infratores serão punidos na forma da lei.
+              Todas as pessoas aqui descritas tinham pelo menos 18 anos de idade: 18 USC 2257 Declarações de conformidade de requisitos de manutenção de registros
              </p>
            </div>
          </div>

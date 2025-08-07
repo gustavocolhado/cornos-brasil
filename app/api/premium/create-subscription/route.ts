@@ -23,27 +23,27 @@ interface CreateSubscriptionRequest {
 const planData = {
   monthly: {
     name: 'Premium Mensal',
-    price: 2990, // R$ 29,90 em centavos
+    price: 1990, // R$ 29,90 em centavos
     description: 'Acesso completo por 1 mês'
   },
   quarterly: {
     name: 'Premium Trimestral',
-    price: 6990, // R$ 69,90 em centavos
+    price: 3290, // R$ 69,90 em centavos
     description: 'Acesso completo por 3 meses'
   },
   semestral: {
     name: 'Premium Semestral',
-    price: 9990, // R$ 99,90 em centavos
+    price: 5790, // R$ 99,90 em centavos
     description: 'Acesso completo por 6 meses'
   },
   yearly: {
     name: 'Premium Anual',
-    price: 14990, // R$ 149,90 em centavos
+    price: 9990, // R$ 149,90 em centavos
     description: 'Acesso completo por 12 meses'
   },
   lifetime: {
     name: 'Premium Vitalício',
-    price: 99990, // R$ 999,90 em centavos
+    price: 49990, // R$ 999,90 em centavos
     description: 'Acesso vitalício ao conteúdo'
   }
 }
@@ -123,7 +123,7 @@ async function handleStripeSubscription(
 ) {
   try {
     // Garantir URLs válidas
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    const baseUrl = process.env.HOST_URL
     const successUrl = ensureValidUrl(baseUrl, '/premium/success?session_id={CHECKOUT_SESSION_ID}')
     const cancelUrl = ensureValidUrl(baseUrl, '/premium/cancel')
     
@@ -176,7 +176,7 @@ async function handleMercadoPagoSubscription(
 ) {
   try {
     // Garantir URLs válidas
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    const baseUrl = process.env.HOST_URL
     const successUrl = ensureValidUrl(baseUrl, '/premium/success')
     const failureUrl = ensureValidUrl(baseUrl, '/premium/cancel')
     const pendingUrl = ensureValidUrl(baseUrl, '/premium/pending')
