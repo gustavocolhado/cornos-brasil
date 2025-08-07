@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         })
 
         // Verificações rigorosas para confirmar que é um pagamento real
-        if (payment.status !== 'approved') {
+        if (payment.status !== 'approved' && payment.status !== 'paid') {
           console.log('❌ Pagamento não aprovado. Status:', payment.status)
           return NextResponse.json({
             status: 'pending',
@@ -100,26 +100,8 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        // Verificar se o pagamento é recente (últimas 24 horas)
-        const approvalDate = new Date(payment.date_approved)
-        const now = new Date()
-        const hoursDiff = (now.getTime() - approvalDate.getTime()) / (1000 * 60 * 60)
-        
-        console.log('🔍 Verificação de data do pagamento:', {
-          paymentId: payment.id,
-          approvalDate: payment.date_approved,
-          hoursDiff: Math.round(hoursDiff),
-          isRecent: hoursDiff <= 24
-        })
-
-        if (hoursDiff > 24) {
-          console.log('❌ Pagamento muito antigo:', hoursDiff, 'horas atrás')
-          return NextResponse.json({
-            status: 'pending',
-            message: 'Pagamento muito antigo',
-            payment_id: payment.id
-          })
-        }
+        // REMOVIDO: Verificação de data - APIs de verificação não devem confirmar pagamentos
+        // A confirmação real deve vir apenas do webhook
 
         console.log('✅ Pagamento confirmado como aprovado:', {
           paymentId: payment.id,
@@ -140,8 +122,8 @@ export async function POST(request: NextRequest) {
             dateApproved: specificPayment.date_approved
           })
 
-          // Confirmar que ambos os status são 'approved'
-          if (specificPayment.status !== 'approved') {
+          // Confirmar que ambos os status são 'approved' ou 'paid'
+          if (specificPayment.status !== 'approved' && specificPayment.status !== 'paid') {
             console.log('❌ Verificação dupla falhou. Status da API:', specificPayment.status)
             return NextResponse.json({
               status: 'pending',

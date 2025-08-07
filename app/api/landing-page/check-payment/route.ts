@@ -34,51 +34,16 @@ export async function POST(request: NextRequest) {
     })
 
     // Verificações rigorosas para confirmar que é um pagamento real
-    const isReallyPaid = payment.status === 'approved' && 
+    const isReallyPaid = (payment.status === 'approved' || payment.status === 'paid') && 
                         (payment.transaction_amount || 0) > 0 && 
                         payment.date_approved !== null
 
-    // Verificar se o pagamento é recente (últimas 24 horas)
-    let isRecent = false
-    if (payment.date_approved && payment.date_approved !== null) {
-      const approvalDate = new Date(payment.date_approved)
-      const now = new Date()
-      const hoursDiff = (now.getTime() - approvalDate.getTime()) / (1000 * 60 * 60)
-      isRecent = hoursDiff <= 24
-      
-      console.log('🔍 Verificação de data do PIX:', {
-        paymentId: payment.id,
-        approvalDate: payment.date_approved,
-        hoursDiff: Math.round(hoursDiff),
-        isRecent: isRecent
-      })
-    }
+    // REMOVIDO: Verificação de data - APIs de verificação não devem confirmar pagamentos
+    // A confirmação real deve vir apenas do webhook
+    
+    const isReallyPaidAndRecent = false // SEMPRE false - apenas o webhook pode confirmar
 
-    const isReallyPaidAndRecent = isReallyPaid && isRecent
-
-    if (!isReallyPaidAndRecent) {
-      if (!isReallyPaid) {
-        console.log('❌ PIX não aprovado ou inválido:', {
-          status: payment.status,
-          amount: payment.transaction_amount || 0,
-          dateApproved: payment.date_approved
-        })
-      } else {
-        console.log('❌ PIX muito antigo:', {
-          paymentId: payment.id,
-          status: payment.status,
-          amount: payment.transaction_amount || 0,
-          dateApproved: payment.date_approved
-        })
-      }
-    } else {
-      console.log('✅ PIX confirmado como realmente aprovado e recente:', {
-        paymentId: payment.id,
-        status: payment.status,
-        amount: payment.transaction_amount || 0,
-        dateApproved: payment.date_approved
-      })
-    }
+    console.log('ℹ️ API de verificação PIX: apenas retornando status, não confirmando pagamento')
 
     // IMPORTANTE: Esta API apenas retorna o status, NÃO confirma o pagamento
     // A confirmação real deve vir apenas do webhook do Mercado Pago

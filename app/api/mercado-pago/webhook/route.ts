@@ -18,8 +18,8 @@ export async function POST(request: Request) {
 
     const { action, data, date_created } = body;
 
-    // Só processar se for payment.updated E o status for approved
-    if (action === 'payment.updated' && data.status === 'approved') {
+    // Só processar se for payment.updated
+    if (action === 'payment.updated') {
       const paymentId = parseInt(data.id); // Converte o ID para número inteiro
 
       if (!paymentId) {
@@ -27,9 +27,31 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'ID do pagamento não fornecido.' }, { status: 400 });
       }
 
+      console.log('🔍 Webhook recebido para paymentId:', paymentId);
+
+      // Se o status não veio no webhook, buscar da API
+      let paymentStatus = data.status;
+      if (!paymentStatus) {
+        try {
+          const paymentClient = new Payment(mercadopago);
+          const paymentInfo = await paymentClient.get({ id: paymentId });
+          paymentStatus = paymentInfo.status;
+          console.log('🔍 Status obtido da API:', paymentStatus);
+        } catch (apiError) {
+          console.error('❌ Erro ao buscar status da API:', apiError);
+          return NextResponse.json({ message: 'Erro ao verificar status do pagamento' }, { status: 500 });
+        }
+      }
+
+      // Só processar se o status for approved ou paid
+      if (paymentStatus !== 'approved' && paymentStatus !== 'paid') {
+        console.log('❌ Pagamento não aprovado. Status:', paymentStatus);
+        return NextResponse.json({ message: 'Pagamento não aprovado' });
+      }
+
       console.log('🔍 Processando pagamento aprovado:', {
         paymentId,
-        status: data.status,
+        status: paymentStatus, // Usar paymentStatus em vez de data.status
         action: action,
         date: date_created
       });
@@ -47,8 +69,8 @@ export async function POST(request: Request) {
           dateApproved: paymentInfo.date_approved
         });
 
-        // Só processar se a API confirmar que o pagamento foi aprovado
-        if (paymentInfo.status !== 'approved') {
+        // Só processar se a API confirmar que o pagamento foi aprovado ou pago
+        if (paymentInfo.status !== 'approved' && paymentInfo.status !== 'paid') {
           console.log('❌ API Mercado Pago confirma: pagamento não aprovado. Status:', paymentInfo.status);
           return NextResponse.json({ message: 'Pagamento não confirmado pela API' });
         }
@@ -77,8 +99,8 @@ export async function POST(request: Request) {
       }
 
       // Verificar se o pagamento já foi processado
-      if (payment.status === 'approved') {
-        console.log('⚠️ Pagamento já foi processado anteriormente. PaymentId:', paymentId);
+      if (payment.status === 'approved' || payment.status === 'paid') {
+        console.log('⚠️ Pagamento já foi processado anteriormente. PaymentId:', paymentId, 'Status:', payment.status);
         return NextResponse.json({ message: 'Pagamento já processado' });
       }
 
@@ -115,13 +137,13 @@ export async function POST(request: Request) {
       // Atualiza o status do pagamento na tabela Payment
       await prisma.payment.updateMany({
         where: { paymentId: paymentId },
-        data: { status: data.status },
+        data: { status: paymentStatus },
       });
 
       // Atualiza o status na tabela Affiliates
       await prisma.affiliate.updateMany({
         where: { paymentId: paymentId },
-        data: { status: data.status },
+        data: { status: paymentStatus },
       });
 
       // console.log('Status dos afiliados atualizado com sucesso para o paymentId:', paymentId);
@@ -132,7 +154,7 @@ export async function POST(request: Request) {
           paymentId: paymentId,
         },
         data: {
-          status: data.status,
+          status: paymentStatus,
         },
       });
 
@@ -147,7 +169,7 @@ export async function POST(request: Request) {
 
       if (user) {
         const updateData: any = {
-          paymentStatus: data.status,
+          paymentStatus: paymentStatus,
           premium: true,
           paymentDate: paymentDate,
           expireDate: expireDate,
