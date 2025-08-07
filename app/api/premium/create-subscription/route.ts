@@ -55,15 +55,22 @@ function ensureValidUrl(baseUrl: string | undefined, path: string): string {
     return `http://localhost:3000${path}`
   }
   
-  // Se a URL não tem protocolo, adiciona http://
+  // Se a URL não tem protocolo, adiciona https:// para produção
   if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-    baseUrl = `http://${baseUrl}`
+    baseUrl = `https://${baseUrl}`
   }
   
   // Remove barra final se existir
   baseUrl = baseUrl.replace(/\/$/, '')
   
-  return `${baseUrl}${path}`
+  // Garantir que a URL seja válida
+  try {
+    new URL(`${baseUrl}${path}`)
+    return `${baseUrl}${path}`
+  } catch (error) {
+    console.warn('URL inválida, usando fallback:', `${baseUrl}${path}`)
+    return `https://cornosbrasil.com${path}`
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -182,7 +189,13 @@ async function handleMercadoPagoSubscription(
     const pendingUrl = ensureValidUrl(baseUrl, '/premium/pending')
     const webhookUrl = ensureValidUrl(baseUrl, '/api/mercado-pago/webhook')
     
-    console.log('URLs do Mercado Pago:', { successUrl, failureUrl, pendingUrl, webhookUrl })
+    console.log('URLs do Mercado Pago:', { 
+      successUrl, 
+      failureUrl, 
+      pendingUrl, 
+      webhookUrl,
+      baseUrl: process.env.HOST_URL 
+    })
 
     // Criar preferência de pagamento do Mercado Pago
     const preference = {
@@ -203,7 +216,6 @@ async function handleMercadoPagoSubscription(
         failure: failureUrl,
         pending: pendingUrl,
       },
-      auto_return: 'approved',
       external_reference: `${userId}_${plan.name.toLowerCase().replace(/\s+/g, '_')}`,
       notification_url: webhookUrl,
       expires: true,

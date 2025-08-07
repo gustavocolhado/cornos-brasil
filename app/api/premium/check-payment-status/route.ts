@@ -62,11 +62,116 @@ export async function POST(request: NextRequest) {
       if (response.results && response.results.length > 0) {
         const payment: PaymentResult = response.results[0]
         
+        console.log('🔍 Verificação de status do pagamento:', {
+          paymentId: payment.id,
+          status: payment.status,
+          transactionAmount: payment.transaction_amount,
+          dateApproved: payment.date_approved,
+          externalReference: payment.external_reference
+        })
+
+        // Verificações rigorosas para confirmar que é um pagamento real
+        if (payment.status !== 'approved') {
+          console.log('❌ Pagamento não aprovado. Status:', payment.status)
+          return NextResponse.json({
+            status: 'pending',
+            message: 'Pagamento não aprovado',
+            payment_id: payment.id
+          })
+        }
+
+        // Verificar se tem valor válido
+        if (!payment.transaction_amount || payment.transaction_amount <= 0) {
+          console.log('❌ Pagamento com valor inválido:', payment.transaction_amount)
+          return NextResponse.json({
+            status: 'pending',
+            message: 'Pagamento com valor inválido',
+            payment_id: payment.id
+          })
+        }
+
+        // Verificar se tem data de aprovação
+        if (!payment.date_approved) {
+          console.log('❌ Pagamento sem data de aprovação')
+          return NextResponse.json({
+            status: 'pending',
+            message: 'Pagamento sem data de aprovação',
+            payment_id: payment.id
+          })
+        }
+
+        // Verificar se o pagamento é recente (últimas 24 horas)
+        const approvalDate = new Date(payment.date_approved)
+        const now = new Date()
+        const hoursDiff = (now.getTime() - approvalDate.getTime()) / (1000 * 60 * 60)
+        
+        console.log('🔍 Verificação de data do pagamento:', {
+          paymentId: payment.id,
+          approvalDate: payment.date_approved,
+          hoursDiff: Math.round(hoursDiff),
+          isRecent: hoursDiff <= 24
+        })
+
+        if (hoursDiff > 24) {
+          console.log('❌ Pagamento muito antigo:', hoursDiff, 'horas atrás')
+          return NextResponse.json({
+            status: 'pending',
+            message: 'Pagamento muito antigo',
+            payment_id: payment.id
+          })
+        }
+
+        console.log('✅ Pagamento confirmado como aprovado:', {
+          paymentId: payment.id,
+          status: payment.status,
+          amount: payment.transaction_amount,
+          dateApproved: payment.date_approved
+        })
+
+        // Verificação dupla: buscar o pagamento específico pelo ID
+        try {
+          const specificPayment = await paymentClient.get({ id: payment.id })
+          
+          console.log('🔍 Verificação dupla do pagamento:', {
+            paymentId: specificPayment.id,
+            apiStatus: specificPayment.status,
+            searchStatus: payment.status,
+            transactionAmount: specificPayment.transaction_amount,
+            dateApproved: specificPayment.date_approved
+          })
+
+          // Confirmar que ambos os status são 'approved'
+          if (specificPayment.status !== 'approved') {
+            console.log('❌ Verificação dupla falhou. Status da API:', specificPayment.status)
+            return NextResponse.json({
+              status: 'pending',
+              message: 'Pagamento não confirmado na verificação dupla',
+              payment_id: payment.id
+            })
+          }
+
+          console.log('✅ Verificação dupla confirmada - pagamento realmente aprovado')
+          
+        } catch (apiError) {
+          console.error('❌ Erro na verificação dupla:', apiError)
+          return NextResponse.json({
+            status: 'pending',
+            message: 'Erro na verificação dupla do pagamento',
+            payment_id: payment.id
+          })
+        }
+        
+        // IMPORTANTE: Esta API apenas retorna o status, NÃO confirma o pagamento
+        // A confirmação real deve vir apenas do webhook do Mercado Pago
+        console.log('ℹ️ API de verificação: apenas retornando status, não confirmando pagamento')
+        
         return NextResponse.json({
           status: payment.status,
           payment_id: payment.id,
           transaction_amount: payment.transaction_amount,
           date_approved: payment.date_approved,
+          // Adicionar flag para indicar que é apenas verificação
+          is_verification_only: true
         })
       }
 

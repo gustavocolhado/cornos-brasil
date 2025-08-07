@@ -67,8 +67,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Configurar webhook URL apenas para produção
+    let webhookUrl: string | undefined = undefined
+    
+    if (process.env.NODE_ENV === 'production') {
+      const baseUrl = process.env.HOST_URL || 'https://cornosbrasil.com'
+      webhookUrl = `${baseUrl}/api/mercado-pago/webhook`
+      console.log('🔗 Webhook configurado para PIX da Landing Page (produção):', webhookUrl)
+    } else {
+      console.log('ℹ️ Webhook não configurado para desenvolvimento local')
+    }
+
     // Criar pagamento PIX
-    const payment = {
+    const payment: any = {
       transaction_amount: value / 100, // Converter de centavos para reais
       description: `${plan.name} - ${plan.description}`,
       payment_method_id: 'pix',
@@ -82,6 +93,11 @@ export async function POST(request: NextRequest) {
         source: referralData?.source || 'landing_page',
         campaign: referralData?.campaign || 'direct'
       }
+    }
+
+    // Adicionar webhook apenas se estiver em produção
+    if (webhookUrl) {
+      payment.notification_url = webhookUrl
     }
 
     const paymentClient = new Payment(mercadopago)
