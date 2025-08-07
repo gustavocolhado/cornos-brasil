@@ -1,4 +1,4 @@
-# Configuração Nixpacks para Railway
+# Configuração Nixpacks para Railway/Coolify
 # Node.js 18 com npm incluído
 
 [phases.setup]
@@ -12,3 +12,6 @@ cmds = ["npm run build"]
 
 [start]
 cmd = "npm start"
+
+[variables]
+NODE_ENV = "production"
