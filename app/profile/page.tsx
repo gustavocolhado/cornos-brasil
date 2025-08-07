@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { 
@@ -73,7 +73,7 @@ const tabs: TabData[] = [
   { id: 'settings', label: 'Configurações', icon: Settings }
 ]
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -675,5 +675,20 @@ export default function ProfilePage() {
       </div>
       <Footer />
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-theme-primary flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-red mx-auto mb-4"></div>
+          <p className="text-theme-secondary">Carregando perfil...</p>
+        </div>
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   )
 } 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
 import Layout from '@/components/Layout'
@@ -8,7 +8,7 @@ import Header from '@/components/Header'
 import AuthModal from '@/components/AuthModal'
 import { useAuth } from '@/contexts/AuthContext'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { openAuthModal } = useAuth()
@@ -244,5 +244,23 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </Layout>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <Header />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-theme-background to-theme-card">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-red mx-auto mb-4"></div>
+            <p className="text-theme-secondary">Carregando...</p>
+          </div>
+        </div>
+      </Layout>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 } 
