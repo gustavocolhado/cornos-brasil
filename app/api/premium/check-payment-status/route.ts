@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         console.log('🔍 Verificação de status do pagamento:', {
           paymentId: payment.id,
           status: payment.status,
-          transactionAmount: payment.transaction_amount,
+          transactionAmount: payment.transaction_amount || 0,
           dateApproved: payment.date_approved,
           externalReference: payment.external_reference
         })
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
         // Verificar se tem valor válido
         if (!payment.transaction_amount || payment.transaction_amount <= 0) {
-          console.log('❌ Pagamento com valor inválido:', payment.transaction_amount)
+          console.log('❌ Pagamento com valor inválido:', payment.transaction_amount || 0)
           return NextResponse.json({
             status: 'pending',
             message: 'Pagamento com valor inválido',
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         console.log('✅ Pagamento confirmado como aprovado:', {
           paymentId: payment.id,
           status: payment.status,
-          amount: payment.transaction_amount,
+          amount: payment.transaction_amount || 0,
           dateApproved: payment.date_approved
         })
 
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
             paymentId: specificPayment.id,
             apiStatus: specificPayment.status,
             searchStatus: payment.status,
-            transactionAmount: specificPayment.transaction_amount,
+            transactionAmount: specificPayment.transaction_amount || 0,
             dateApproved: specificPayment.date_approved
           })
 
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           status: payment.status,
           payment_id: payment.id,
-          transaction_amount: payment.transaction_amount,
+          transaction_amount: payment.transaction_amount || 0,
           date_approved: payment.date_approved,
           // Adicionar flag para indicar que é apenas verificação
           is_verification_only: true

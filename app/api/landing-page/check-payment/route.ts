@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
 
     // Verificações rigorosas para confirmar que é um pagamento real
     const isReallyPaid = payment.status === 'approved' && 
-                        payment.transaction_amount > 0 && 
+                        (payment.transaction_amount || 0) > 0 && 
                         payment.date_approved !== null
 
     // Verificar se o pagamento é recente (últimas 24 horas)
     let isRecent = false
-    if (payment.date_approved) {
+    if (payment.date_approved && payment.date_approved !== null) {
       const approvalDate = new Date(payment.date_approved)
       const now = new Date()
       const hoursDiff = (now.getTime() - approvalDate.getTime()) / (1000 * 60 * 60)
@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
       if (!isReallyPaid) {
         console.log('❌ PIX não aprovado ou inválido:', {
           status: payment.status,
-          amount: payment.transaction_amount,
+          amount: payment.transaction_amount || 0,
           dateApproved: payment.date_approved
         })
       } else {
         console.log('❌ PIX muito antigo:', {
           paymentId: payment.id,
           status: payment.status,
-          amount: payment.transaction_amount,
+          amount: payment.transaction_amount || 0,
           dateApproved: payment.date_approved
         })
       }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       console.log('✅ PIX confirmado como realmente aprovado e recente:', {
         paymentId: payment.id,
         status: payment.status,
-        amount: payment.transaction_amount,
+        amount: payment.transaction_amount || 0,
         dateApproved: payment.date_approved
       })
     }
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       id: payment.id,
       status: payment.status,
       paid: false, // SEMPRE false - apenas o webhook pode confirmar
-      amount: payment.transaction_amount,
+      amount: payment.transaction_amount || 0,
       email: payment.payer?.email,
       planId: payment.metadata?.planId,
       source: payment.metadata?.source,
