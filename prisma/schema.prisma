@@ -244,6 +244,7 @@ model Payment {
   promotionCode String?
   preferenceId     String? @unique
   affiliateId  String?
+  campaignId   String? // ID da campanha quando pagamento via campanha
 
   user      User     @relation(fields: [userId], references: [id])
   

@@ -535,7 +535,9 @@ export default function LandingPage() {
           confirmPassword: confirmPassword,
           planId: selectedPlan?.id,
           paymentId: pixData?.id || null,
-          amount: selectedPlan?.price || 0
+          amount: selectedPlan?.price || 0,
+          source: referralData?.source || null,
+          campaign: referralData?.campaign || null
         }),
       });
 
@@ -550,9 +552,34 @@ export default function LandingPage() {
       localStorage.removeItem('landingPageUserId');
       localStorage.removeItem('campaignData');
       
-      // Sucesso! Redirecionar para a página inicial
-      alert('Senha definida e conta ativada com sucesso! Você será redirecionado para a página inicial.');
-      router.push('/');
+      // Fazer login automático
+      try {
+        const signInResponse = await fetch('/api/auth/signin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            callbackUrl: '/'
+          }),
+        });
+        
+        if (signInResponse.ok) {
+          // Sucesso! Redirecionar para a página inicial logado
+          router.push('/');
+        } else {
+          // Se não conseguir fazer login automático, redirecionar para login
+          alert('Conta ativada com sucesso! Faça login para continuar.');
+          router.push('/login');
+        }
+      } catch (loginError) {
+        console.error('Erro no login automático:', loginError);
+        // Redirecionar para login em caso de erro
+        alert('Conta ativada com sucesso! Faça login para continuar.');
+        router.push('/login');
+      }
       
     } catch (error) {
       console.error('Erro:', error);

@@ -16,7 +16,7 @@ function getPlanDuration(planId: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, confirmPassword, planId, paymentId, amount } = await request.json()
+    const { email, password, confirmPassword, planId, paymentId, amount, source, campaign } = await request.json()
 
     // Validação básica
     if (!email || !password || !confirmPassword) {
@@ -88,13 +88,15 @@ export async function POST(request: NextRequest) {
             paymentId: paymentId || null,
             duration: getPlanDuration(planId),
             preferenceId: `landing_page_${Date.now()}`,
+            campaignId: source && campaign ? `${source}_${campaign}` : null, // Vincular campanha
           }
         })
         console.log('✅ Payment registrado:', {
           id: payment.id,
           plan: payment.plan,
           amount: payment.amount,
-          userId: payment.userId
+          userId: payment.userId,
+          campaignId: payment.campaignId
         })
       } catch (error) {
         console.error('❌ Erro ao criar payment:', error)
