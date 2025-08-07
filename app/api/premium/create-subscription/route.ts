@@ -43,7 +43,7 @@ const planData = {
   },
   lifetime: {
     name: 'Premium Vitalício',
-    price: 49990, // R$ 999,90 em centavos
+    price: 50, // R$ 999,90 em centavos
     description: 'Acesso vitalício ao conteúdo'
   }
 }
