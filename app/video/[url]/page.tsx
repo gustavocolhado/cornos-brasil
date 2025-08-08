@@ -432,12 +432,9 @@ export default function VideoPage() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Sidebar */}
-            <div className="lg:w-80 space-y-4">
-              {/* Banner Mobile - Sidebar */}
-              <div className="lg:hidden">
+              {/* Banner Mobile - Abaixo das Informações */}
+              <div className="lg:hidden mt-4">
                 <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
                   <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
                     <AdIframe300x250 />
@@ -446,15 +443,15 @@ export default function VideoPage() {
               </div>
 
               {/* Vídeos Relacionados */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-4">
+              <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mt-4">
                 <h3 className="text-lg font-bold text-theme-primary mb-4">Vídeos Relacionados</h3>
-                <div className="space-y-4">
-                  {relatedLoading ? (
-                    <div className="flex justify-center py-4">
-                      <RefreshCw className="w-5 h-5 animate-spin text-theme-primary" />
-                    </div>
-                  ) : relatedVideos.length > 0 ? (
-                    relatedVideos.slice(0, 5).map((relatedVideo) => (
+                {relatedLoading ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-theme-primary" />
+                  </div>
+                ) : relatedVideos.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {relatedVideos.slice(0, 20).map((relatedVideo) => (
                       <VideoCard
                         key={relatedVideo.id}
                         id={relatedVideo.id}
@@ -470,10 +467,34 @@ export default function VideoPage() {
                         creator={relatedVideo.creator}
                         uploader={null}
                       />
-                    ))
-                  ) : (
-                    <p className="text-theme-muted text-sm">Nenhum vídeo relacionado encontrado</p>
-                  )}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-theme-muted text-sm text-center py-8">Nenhum vídeo relacionado encontrado</p>
+                )}
+              </div>
+            </div>
+
+            {/* Sidebar com Anúncios Desktop */}
+            <div className="hidden lg:block lg:w-80 space-y-4">
+              {/* Anúncio 1 - 300x250 */}
+              <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                  <AdIframe300x250 />
+                </div>
+              </div>
+
+              {/* Anúncio 2 - 300x250 */}
+              <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                  <AdIframe300x250 />
+                </div>
+              </div>
+
+              {/* Anúncio 3 - 300x250 */}
+              <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                  <AdIframe300x250 />
                 </div>
               </div>
             </div>
