@@ -11,6 +11,15 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 export async function GET(req: Request) {
+    // Verificar se o Stripe está configurado
+    if (!stripe) {
+      return NextResponse.json({ 
+        error: 'Stripe não está configurado',
+        confirmed: false,
+        status: 'error'
+      }, { status: 500 });
+    }
+
     const { searchParams } = new URL(req.url);
     const session_id = searchParams.get('session_id');
   

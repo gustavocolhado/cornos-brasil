@@ -6,9 +6,11 @@ import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { prisma } from '@/lib/prisma'
 
 // Configuração do Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
-})
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-10-28.acacia',
+    })
+  : null
 
 // Configuração do Mercado Pago
 const mercadopago = new MercadoPagoConfig({
@@ -149,6 +151,11 @@ async function handleStripeSubscription(
   paymentSessionId: string
 ) {
   try {
+    // Verificar se o Stripe está configurado
+    if (!stripe) {
+      throw new Error('Stripe não está configurado')
+    }
+
     // Garantir URLs válidas
     const baseUrl = process.env.HOST_URL
     const successUrl = ensureValidUrl(baseUrl, `/premium/success?session_id={CHECKOUT_SESSION_ID}&paymentSessionId=${paymentSessionId}`)

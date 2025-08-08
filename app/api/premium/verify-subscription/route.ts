@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
-})
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-10-28.acacia',
+    })
+  : null
 
 interface VerifySubscriptionRequest {
   sessionId: string
@@ -11,6 +13,14 @@ interface VerifySubscriptionRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o Stripe está configurado
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe não está configurado' },
+        { status: 500 }
+      )
+    }
+
     const body: VerifySubscriptionRequest = await request.json()
     const { sessionId } = body
 
