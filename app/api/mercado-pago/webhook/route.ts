@@ -48,13 +48,17 @@ export async function POST(request: Request) {
       // Buscar PaymentSession usando diferentes estratégias
       let paymentSession = null;
 
-      // 1. Tentar buscar por external_reference direto
+      // 1. Tentar buscar por external_reference direto (formato: userId_plan_paymentSessionId)
       if (paymentInfo?.external_reference) {
         console.log('🔍 Tentando buscar PaymentSession por external_reference:', paymentInfo.external_reference);
         
-        // O external_reference tem o formato: userId_plan_paymentSessionId
+        // O external_reference pode ter dois formatos:
+        // a) userId_plan_paymentSessionId (nosso formato)
+        // b) preferenceId (formato do Mercado Pago)
+        
         const parts = paymentInfo.external_reference.split('_');
         if (parts.length >= 3) {
+          // Formato: userId_plan_paymentSessionId
           const paymentSessionId = parts[parts.length - 1];
           console.log('🔍 Tentando buscar PaymentSession por ID do external_reference:', paymentSessionId);
           paymentSession = await prisma.paymentSession.findUnique({
@@ -64,10 +68,34 @@ export async function POST(request: Request) {
           if (paymentSession) {
             console.log('✅ PaymentSession encontrada por ID do external_reference:', paymentSession.id);
           }
+        } else {
+          // Formato: preferenceId (formato do Mercado Pago)
+          console.log('🔍 Tentando buscar PaymentSession por preferenceId:', paymentInfo.external_reference);
+          paymentSession = await prisma.paymentSession.findFirst({
+            where: {
+              preferenceId: paymentInfo.external_reference
+            }
+          });
+          
+          if (paymentSession) {
+            console.log('✅ PaymentSession encontrada por preferenceId:', paymentSession.id);
+          }
         }
       }
 
-      // 2. Tentar buscar por preferenceId que contém o paymentId (para casos antigos)
+      // 2. Tentar buscar por paymentId na PaymentSession
+      if (!paymentSession) {
+        console.log('🔍 Tentando buscar PaymentSession por paymentId:', paymentId);
+        paymentSession = await prisma.paymentSession.findFirst({
+          where: { paymentId: paymentId }
+        });
+        
+        if (paymentSession) {
+          console.log('✅ PaymentSession encontrada por paymentId:', paymentSession.id);
+        }
+      }
+
+      // 3. Tentar buscar por preferenceId que contém o paymentId (para casos antigos)
       if (!paymentSession) {
         console.log('🔍 Tentando buscar PaymentSession por preferenceId que contém paymentId:', paymentId);
         paymentSession = await prisma.paymentSession.findFirst({
@@ -80,11 +108,11 @@ export async function POST(request: Request) {
         });
         
         if (paymentSession) {
-          console.log('✅ PaymentSession encontrada por preferenceId:', paymentSession.id);
+          console.log('✅ PaymentSession encontrada por preferenceId (contains):', paymentSession.id);
         }
       }
 
-      // 3. Tentar buscar por external_reference que contém o paymentId em qualquer parte
+      // 4. Tentar buscar por external_reference que contém o paymentId em qualquer parte
       if (!paymentSession && paymentInfo?.external_reference) {
         console.log('🔍 Tentando buscar PaymentSession por external_reference (contains):', paymentInfo.external_reference);
         paymentSession = await prisma.paymentSession.findFirst({
