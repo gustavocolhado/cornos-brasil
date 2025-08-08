@@ -10,15 +10,12 @@ async function testSitemap() {
     await prisma.$connect()
     console.log('✅ Conexão com banco estabelecida')
     
-    // Contar vídeos
-    const videoCount = await prisma.video.count({
-      where: {
-        premium: false,
-        url: {
-          not: null
-        }
-      }
-    })
+         // Contar vídeos
+     const videoCount = await prisma.video.count({
+       where: {
+         premium: false
+       }
+     })
     console.log(`📊 Total de vídeos não premium: ${videoCount}`)
     
     // Contar criadores
@@ -34,10 +31,7 @@ async function testSitemap() {
          premium: true
        },
        where: {
-         premium: false,
-         url: {
-           not: null
-         }
+         premium: false
        },
        take: 10
      })

@@ -19,11 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
       where: {
         // Incluir apenas vídeos não premium para SEO público
-        premium: false,
-        // Garantir que tem URL válida
-        url: {
-          not: null
-        }
+        premium: false
       },
       orderBy: {
         updated_at: 'desc'
