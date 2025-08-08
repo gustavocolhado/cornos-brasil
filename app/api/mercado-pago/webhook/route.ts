@@ -23,84 +23,128 @@ export async function POST(request: Request) {
 
       console.log('🔍 Processando webhook para paymentId:', paymentId);
 
-      // Buscar PaymentSession baseada no external_reference ou preferenceId
-      let paymentSession = await prisma.paymentSession.findFirst({
-        where: {
-          OR: [
-            { preferenceId: paymentId.toString() },
-            { preferenceId: { contains: paymentId.toString() } }
-          ]
-        },
-      });
-
-      if (!paymentSession) {
-        console.warn('⚠️ Nenhuma PaymentSession encontrada com o paymentId:', paymentId);
+      // Primeiro, tentar buscar informações do pagamento na API do Mercado Pago
+      let paymentInfo = null;
+      try {
+        const { MercadoPagoConfig, Payment } = await import('mercadopago');
+        const mercadopago = new MercadoPagoConfig({
+          accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+        });
         
-        // Tentar buscar informações do pagamento na API do Mercado Pago
-        try {
-          const { MercadoPagoConfig, Payment } = await import('mercadopago');
-          const mercadopago = new MercadoPagoConfig({
-            accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+        const paymentClient = new Payment(mercadopago);
+        paymentInfo = await paymentClient.get({ id: paymentId });
+        
+        console.log('✅ Informações do pagamento obtidas da API:', {
+          id: paymentInfo.id,
+          status: paymentInfo.status,
+          transaction_amount: paymentInfo.transaction_amount,
+          payer_email: paymentInfo.payer?.email,
+          external_reference: paymentInfo.external_reference
+        });
+      } catch (apiError) {
+        console.error('❌ Erro ao buscar informações do pagamento na API:', apiError);
+      }
+
+      // Buscar PaymentSession usando diferentes estratégias
+      let paymentSession = null;
+
+      // 1. Tentar buscar por external_reference direto
+      if (paymentInfo?.external_reference) {
+        console.log('🔍 Tentando buscar PaymentSession por external_reference:', paymentInfo.external_reference);
+        
+        // O external_reference tem o formato: userId_plan_paymentSessionId
+        const parts = paymentInfo.external_reference.split('_');
+        if (parts.length >= 3) {
+          const paymentSessionId = parts[parts.length - 1];
+          console.log('🔍 Tentando buscar PaymentSession por ID do external_reference:', paymentSessionId);
+          paymentSession = await prisma.paymentSession.findUnique({
+            where: { id: paymentSessionId }
           });
           
-          const paymentClient = new Payment(mercadopago);
-          const paymentInfo = await paymentClient.get({ id: paymentId });
+          if (paymentSession) {
+            console.log('✅ PaymentSession encontrada por ID do external_reference:', paymentSession.id);
+          }
+        }
+      }
+
+      // 2. Tentar buscar por preferenceId que contém o paymentId (para casos antigos)
+      if (!paymentSession) {
+        console.log('🔍 Tentando buscar PaymentSession por preferenceId que contém paymentId:', paymentId);
+        paymentSession = await prisma.paymentSession.findFirst({
+          where: {
+            OR: [
+              { preferenceId: paymentId.toString() },
+              { preferenceId: { contains: paymentId.toString() } }
+            ]
+          },
+        });
+        
+        if (paymentSession) {
+          console.log('✅ PaymentSession encontrada por preferenceId:', paymentSession.id);
+        }
+      }
+
+      // 3. Tentar buscar por external_reference que contém o paymentId em qualquer parte
+      if (!paymentSession && paymentInfo?.external_reference) {
+        console.log('🔍 Tentando buscar PaymentSession por external_reference (contains):', paymentInfo.external_reference);
+        paymentSession = await prisma.paymentSession.findFirst({
+          where: {
+            OR: [
+              { preferenceId: { contains: paymentInfo.external_reference } },
+              { preferenceId: { contains: paymentId.toString() } }
+            ]
+          },
+        });
+        
+        if (paymentSession) {
+          console.log('✅ PaymentSession encontrada por external_reference (contains):', paymentSession.id);
+        }
+      }
+
+      // 4. Se ainda não encontrou e temos o email do pagador, criar uma nova PaymentSession
+      if (!paymentSession && paymentInfo?.payer?.email) {
+        console.log('🔍 Tentando criar PaymentSession baseada no email do pagador:', paymentInfo.payer.email);
+        
+        const user = await prisma.user.findFirst({
+          where: { email: paymentInfo.payer.email }
+        });
+        
+        if (user) {
+          // Determinar o plano baseado no valor
+          let plan = 'monthly';
+          const amount = paymentInfo.transaction_amount || 0;
           
-          console.log('✅ Informações do pagamento obtidas da API:', {
-            id: paymentInfo.id,
-            status: paymentInfo.status,
-            transaction_amount: paymentInfo.transaction_amount,
-            payer_email: paymentInfo.payer?.email,
-            external_reference: paymentInfo.external_reference
-          });
-          
-          // Tentar encontrar PaymentSession pelo external_reference
-          if (paymentInfo.external_reference) {
-            const parts = paymentInfo.external_reference.split('_');
-            if (parts.length >= 3) {
-              const paymentSessionId = parts[parts.length - 1];
-              paymentSession = await prisma.paymentSession.findUnique({
-                where: { id: paymentSessionId }
-              });
-            }
+          if (amount >= 149.90) {
+            plan = 'yearly';
+          } else if (amount >= 99.90) {
+            plan = 'semestral';
+          } else if (amount >= 69.90) {
+            plan = 'quarterly';
+          } else if (amount >= 29.90) {
+            plan = 'monthly';
+          } else {
+            plan = 'lifetime'; // Para valores baixos como 0.50
           }
           
-          if (!paymentSession && paymentInfo.payer?.email) {
-            // Se ainda não encontrou, criar uma PaymentSession baseada nas informações do pagamento
-            const user = await prisma.user.findFirst({
-              where: { email: paymentInfo.payer.email }
+          console.log('🔍 Criando PaymentSession com plano:', plan, 'e valor:', amount);
+          
+          try {
+            paymentSession = await prisma.paymentSession.create({
+              data: {
+                plan: plan,
+                amount: amount,
+                userId: user.id,
+                status: 'pending',
+                // Não preencher preferenceId para Mercado Pago, apenas external_reference
+              },
             });
             
-            if (user) {
-              // Determinar o plano baseado no valor
-              let plan = 'monthly';
-              const amount = paymentInfo.transaction_amount || 0;
-              
-              if (amount >= 149.90) {
-                plan = 'yearly';
-              } else if (amount >= 99.90) {
-                plan = 'semestral';
-              } else if (amount >= 69.90) {
-                plan = 'quarterly';
-              } else {
-                plan = 'monthly';
-              }
-              
-              paymentSession = await prisma.paymentSession.create({
-                data: {
-                  plan: plan,
-                  amount: amount,
-                  userId: user.id,
-                  status: 'pending',
-                  preferenceId: paymentId.toString(),
-                },
-              });
-              
-              console.log('✅ PaymentSession criada via webhook:', paymentSession);
-            }
+            console.log('✅ PaymentSession criada via webhook:', paymentSession.id);
+          } catch (error) {
+            console.error('❌ Erro ao criar PaymentSession:', error);
           }
-        } catch (apiError) {
-          console.error('❌ Erro ao buscar informações do pagamento na API:', apiError);
+        } else {
+          console.warn('⚠️ Usuário não encontrado com o email:', paymentInfo.payer.email);
         }
       }
 
@@ -114,12 +158,33 @@ export async function POST(request: Request) {
         plan: paymentSession.plan,
         amount: paymentSession.amount,
         userId: paymentSession.userId,
-        status: paymentSession.status
+        status: paymentSession.status,
+        paymentId: paymentSession.paymentId
       });
 
-      const paymentStatus = data.status || 'paid';
+      const paymentStatus = paymentInfo?.status || data.status || 'paid';
       const paymentDate = new Date(date_created);
       let expireDate: Date | null = null;
+
+      // Verificar se o pagamento foi realmente aprovado/pago
+      const isPaymentApproved = paymentStatus === 'approved' || paymentStatus === 'paid';
+      
+      if (!isPaymentApproved) {
+        console.log('ℹ️ Pagamento não aprovado ainda. Status:', paymentStatus);
+        // Atualizar apenas o status da PaymentSession, mas não processar como pago
+        await prisma.paymentSession.update({
+          where: { id: paymentSession.id },
+          data: {
+            status: paymentStatus,
+            paymentId: paymentId, // Cadastrar o paymentId mesmo que não aprovado
+          },
+        });
+        
+        console.log('✅ PaymentSession atualizada com status:', paymentStatus);
+        return NextResponse.json({ message: 'Webhook processado - pagamento não aprovado ainda' });
+      }
+
+      console.log('✅ Pagamento aprovado! Processando...');
 
       // Define a data de expiração com base no tipo de plano da PaymentSession
       switch (paymentSession.plan) {
@@ -164,8 +229,9 @@ export async function POST(request: Request) {
             amount: paymentSession.amount,
           },
         });
+        console.log('✅ Payment atualizado:', payment.id);
       } else {
-        // Criar novo pagamento
+        // Criar novo pagamento apenas quando aprovado
         payment = await prisma.payment.create({
           data: {
             userId: paymentSession.userId,
@@ -173,27 +239,32 @@ export async function POST(request: Request) {
             amount: paymentSession.amount,
             paymentId: paymentId,
             transactionDate: paymentDate,
-            userEmail: '', // Campo obrigatório, mas não temos o email na PaymentSession
+            userEmail: paymentInfo?.payer?.email || '',
             status: paymentStatus,
             preferenceId: paymentSession.preferenceId,
           },
         });
+        console.log('✅ Payment criado:', payment.id);
       }
 
-      console.log('✅ Payment criado/atualizado:', payment);
-
-      // Atualizar a PaymentSession
-      await prisma.paymentSession.update({
+      // Atualizar a PaymentSession com o paymentId do Mercado Pago
+      console.log('🔍 Atualizando PaymentSession com paymentId:', paymentId);
+      
+      const updatedPaymentSession = await prisma.paymentSession.update({
         where: { id: paymentSession.id },
         data: {
           status: paymentStatus,
-          paymentId: paymentId,
+          paymentId: paymentId, // Cadastrar o paymentId do Mercado Pago
         },
       });
 
-      console.log('✅ PaymentSession atualizada');
+      console.log('✅ PaymentSession atualizada com paymentId:', {
+        id: updatedPaymentSession.id,
+        paymentId: updatedPaymentSession.paymentId,
+        status: updatedPaymentSession.status
+      });
 
-      // Atualizar o usuário associado
+      // Atualizar o usuário associado apenas quando o pagamento for aprovado
       const user = await prisma.user.findUnique({
         where: { id: paymentSession.userId },
       });
@@ -204,6 +275,7 @@ export async function POST(request: Request) {
           premium: true,
           paymentDate: paymentDate,
           expireDate: expireDate,
+          paymentId: paymentId, // Também atualizar o paymentId no usuário
         };
 
         await prisma.user.update({
@@ -215,7 +287,8 @@ export async function POST(request: Request) {
           userId: user.id,
           email: user.email,
           premium: true,
-          expireDate: expireDate
+          expireDate: expireDate,
+          paymentId: paymentId
         });
       } else {
         console.warn('❌ Nenhum usuário encontrado com o userId:', paymentSession.userId);

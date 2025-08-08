@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const paymentStatus = paymentResponse.data.status;
 
     if (qrCodeUrl && paymentId) {
-      console.log('🔍 Criando pagamento no banco:', {
+      console.log('🔍 PIX criado no Mercado Pago:', {
         paymentId,
         userId,
         plan: paymentType,
@@ -56,42 +56,24 @@ export async function POST(request: Request) {
         status: paymentStatus
       });
 
-      // Adiciona um registro na tabela de pagamentos com o status
-      const createdPayment = await prisma.payment.create({
-        data: {
-          userId: userId,
-          plan: paymentType,
-          amount: amount,
-          paymentId: parseInt(paymentId.toString()), // Garantir que é número
-          transactionDate: new Date(),
-          userEmail: payerEmail,
-          status: paymentStatus,
-          ...(promotionCode && { promotionCode }),
-        },
-      });
+      // NÃO criar Payment aqui - será criado apenas quando o webhook confirmar o pagamento
+      // NÃO atualizar PaymentSession com paymentId aqui - será atualizado apenas quando o webhook confirmar
 
-      console.log('✅ Pagamento criado no banco:', createdPayment);
-
-      // Atualiza o registro existente na tabela paymentSession com o paymentId
-      await prisma.paymentSession.update({
-        where: {
-          id: sessionId,
-        },
-        data: {
-          paymentId: paymentId,
-          status: paymentStatus,
-        },
-      });
-
-      // Atualiza o usuário no banco de dados com o tipo de plano, status de pagamento, URL do QR Code e paymentId
+      // Apenas atualizar o usuário com as informações temporárias do PIX
       const updateResponse = await prisma.user.update({
         where: { id: userId },
         data: {
           paymentQrCodeUrl: qrCodeUrl,
-          paymentId: paymentId,
           paymentType: paymentType,
-          paymentStatus: paymentStatus,
+          paymentStatus: 'pending', // Status temporário até o webhook confirmar
         },
+      });
+
+      console.log('✅ Usuário atualizado com dados do PIX:', {
+        userId,
+        paymentQrCodeUrl: qrCodeUrl,
+        paymentType,
+        paymentStatus: 'pending'
       });
 
       return NextResponse.json({ qrCodeUrl, paymentId, paymentStatus });

@@ -254,16 +254,19 @@ async function handleMercadoPagoSubscription(
     const preferenceClient = new Preference(mercadopago)
     const response = await preferenceClient.create({ body: preference })
 
-    // Atualizar PaymentSession com o preferenceId
-    await prisma.paymentSession.update({
-      where: { id: paymentSessionId },
-      data: { preferenceId: response.id },
+    // Para Mercado Pago, não atualizamos o preferenceId, pois ele é usado apenas para Stripe
+    // O external_reference já contém a referência para vincular com a PaymentSession
+    console.log('✅ Preferência Mercado Pago criada:', {
+      preferenceId: response.id,
+      external_reference: preference.external_reference,
+      paymentSessionId: paymentSessionId
     })
 
     return NextResponse.json({
       initPoint: response.init_point,
       preferenceId: response.id,
       paymentSessionId: paymentSessionId,
+      external_reference: preference.external_reference,
     })
   } catch (error) {
     console.error('Erro ao criar preferência Mercado Pago:', error)
