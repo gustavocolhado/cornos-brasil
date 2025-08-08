@@ -53,32 +53,41 @@ export async function POST(request: Request) {
         console.log('🔍 Tentando buscar PaymentSession por external_reference:', paymentInfo.external_reference);
         
         // O external_reference pode ter dois formatos:
-        // a) userId_plan_paymentSessionId (nosso formato)
-        // b) preferenceId (formato do Mercado Pago)
+        // a) userId_plan_paymentSessionId (formato premium e landing page)
+        // b) paymentSessionId (formato antigo)
         
         const parts = paymentInfo.external_reference.split('_');
         if (parts.length >= 3) {
           // Formato: userId_plan_paymentSessionId
           const paymentSessionId = parts[parts.length - 1];
           console.log('🔍 Tentando buscar PaymentSession por ID do external_reference:', paymentSessionId);
-          paymentSession = await prisma.paymentSession.findUnique({
-            where: { id: paymentSessionId }
-          });
           
-          if (paymentSession) {
-            console.log('✅ PaymentSession encontrada por ID do external_reference:', paymentSession.id);
+          // Verificar se o paymentSessionId é um ObjectId válido
+          const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+          if (objectIdRegex.test(paymentSessionId)) {
+            paymentSession = await prisma.paymentSession.findUnique({
+              where: { id: paymentSessionId }
+            });
+            
+            if (paymentSession) {
+              console.log('✅ PaymentSession encontrada por ID do external_reference:', paymentSession.id);
+            }
+          } else {
+            console.log('⚠️ PaymentSessionId não é um ObjectId válido:', paymentSessionId);
           }
         } else {
-          // Formato: preferenceId (formato do Mercado Pago)
-          console.log('🔍 Tentando buscar PaymentSession por preferenceId:', paymentInfo.external_reference);
-          paymentSession = await prisma.paymentSession.findFirst({
-            where: {
-              preferenceId: paymentInfo.external_reference
+          // Formato: paymentSessionId (formato antigo)
+          const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+          if (objectIdRegex.test(paymentInfo.external_reference)) {
+            paymentSession = await prisma.paymentSession.findUnique({
+              where: { id: paymentInfo.external_reference }
+            });
+            
+            if (paymentSession) {
+              console.log('✅ PaymentSession encontrada por external_reference (formato antigo):', paymentSession.id);
             }
-          });
-          
-          if (paymentSession) {
-            console.log('✅ PaymentSession encontrada por preferenceId:', paymentSession.id);
+          } else {
+            console.log('⚠️ External reference não é um ObjectId válido:', paymentInfo.external_reference);
           }
         }
       }
@@ -95,41 +104,7 @@ export async function POST(request: Request) {
         }
       }
 
-      // 3. Tentar buscar por preferenceId que contém o paymentId (para casos antigos)
-      if (!paymentSession) {
-        console.log('🔍 Tentando buscar PaymentSession por preferenceId que contém paymentId:', paymentId);
-        paymentSession = await prisma.paymentSession.findFirst({
-          where: {
-            OR: [
-              { preferenceId: paymentId.toString() },
-              { preferenceId: { contains: paymentId.toString() } }
-            ]
-          },
-        });
-        
-        if (paymentSession) {
-          console.log('✅ PaymentSession encontrada por preferenceId (contains):', paymentSession.id);
-        }
-      }
-
-      // 4. Tentar buscar por external_reference que contém o paymentId em qualquer parte
-      if (!paymentSession && paymentInfo?.external_reference) {
-        console.log('🔍 Tentando buscar PaymentSession por external_reference (contains):', paymentInfo.external_reference);
-        paymentSession = await prisma.paymentSession.findFirst({
-          where: {
-            OR: [
-              { preferenceId: { contains: paymentInfo.external_reference } },
-              { preferenceId: { contains: paymentId.toString() } }
-            ]
-          },
-        });
-        
-        if (paymentSession) {
-          console.log('✅ PaymentSession encontrada por external_reference (contains):', paymentSession.id);
-        }
-      }
-
-      // 4. Se ainda não encontrou e temos o email do pagador, criar uma nova PaymentSession
+      // 3. Se ainda não encontrou e temos o email do pagador, criar uma nova PaymentSession
       if (!paymentSession && paymentInfo?.payer?.email) {
         console.log('🔍 Tentando criar PaymentSession baseada no email do pagador:', paymentInfo.payer.email);
         
@@ -163,7 +138,6 @@ export async function POST(request: Request) {
                 amount: amount,
                 userId: user.id,
                 status: 'pending',
-                // Não preencher preferenceId para Mercado Pago, apenas external_reference
               },
             });
             

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import QRCode from 'qrcode'
+import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcrypt'
 
 const mercadopago = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
@@ -68,6 +70,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Buscar ou criar usuário
+    let user = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (!user) {
+      // Se o usuário não existe, criar um temporário
+      const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+      const hashedPassword = await bcrypt.hash(tempPassword, 12)
+      
+      user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name: email.split('@')[0],
+          signupSource: 'landing_page',
+          premium: false,
+          emailVerified: new Date(),
+          tempPassword: true,
+        }
+      })
+      
+      console.log('✅ Usuário temporário criado para PIX:', { userId: user.id, email })
+    }
+
+    // Criar PaymentSession primeiro
+    const paymentSession = await prisma.paymentSession.create({
+      data: {
+        plan: planId,
+        amount: value / 100, // Converter de centavos para reais
+        userId: user.id,
+        status: 'pending',
+      },
+    })
+
+    console.log('✅ PaymentSession criada para PIX:', {
+      id: paymentSession.id,
+      plan: paymentSession.plan,
+      amount: paymentSession.amount,
+      userId: paymentSession.userId,
+      status: paymentSession.status
+    })
+
     // Configurar webhook URL apenas para produção
     let webhookUrl: string | undefined = undefined
     
@@ -87,12 +132,13 @@ export async function POST(request: NextRequest) {
       payer: {
         email: email,
       },
-      external_reference: `landing_page_${planId}_${Date.now()}`,
+      external_reference: `${user.id}_${planId}_${paymentSession.id}`, // Formato igual ao premium: userId_plan_paymentSessionId
       metadata: {
         planId,
         email,
         source: referralData?.source || 'landing_page',
-        campaign: referralData?.campaign || 'direct'
+        campaign: referralData?.campaign || 'direct',
+        paymentSessionId: paymentSession.id
       }
     }
 
@@ -115,6 +161,17 @@ export async function POST(request: NextRequest) {
 
     if (!response.point_of_interaction?.transaction_data?.qr_code) {
       throw new Error('QR Code PIX não gerado')
+    }
+
+    // Atualizar PaymentSession com o paymentId
+    if (response.id) {
+      await prisma.paymentSession.update({
+        where: { id: paymentSession.id },
+        data: { 
+          paymentId: response.id,
+          preferenceId: response.id.toString()
+        },
+      })
     }
 
     // Log para debug
@@ -163,7 +220,8 @@ export async function POST(request: NextRequest) {
       planId,
       email,
       value: value / 100,
-      source: referralData?.source || 'landing_page'
+      source: referralData?.source || 'landing_page',
+      paymentSessionId: paymentSession.id
     })
 
     return NextResponse.json(pixData)
