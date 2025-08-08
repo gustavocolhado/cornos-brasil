@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaFire, FaPlay, FaEye, FaHeart, FaClock, FaUsers, FaVideo, FaSearch, FaCrown, FaTags, FaThLarge, FaComments, FaUpload, FaPlus, FaUserCircle, FaCheck, FaArrowRight, FaCopy, FaSpinner, FaTimes, FaUnlock, FaShieldAlt, FaMobile, FaCalendarAlt, FaHeadphones, FaChevronLeft, FaChevronRight, FaCreditCard } from 'react-icons/fa';
 import Image from 'next/image';
@@ -604,27 +604,26 @@ export default function LandingPage() {
       localStorage.removeItem('landingPageUserId');
       localStorage.removeItem('campaignData');
       
-      // Fazer login automático
+      // Fazer login automático usando NextAuth
       try {
-        const signInResponse = await fetch('/api/auth/signin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-            callbackUrl: '/'
-          }),
+        const result = await signIn('credentials', {
+          email: email,
+          password: password,
+          source: 'landing_page',
+          redirect: false,
         });
         
-        if (signInResponse.ok) {
-          // Sucesso! Redirecionar para a página inicial logado
-          router.push('/');
-        } else {
+        if (result?.error) {
+          console.error('Erro no login automático:', result.error);
           // Se não conseguir fazer login automático, redirecionar para login
           alert('Conta ativada com sucesso! Faça login para continuar.');
           router.push('/login');
+        } else {
+          // Sucesso! Aguardar um pouco para o login ser processado
+          console.log('✅ Login automático realizado com sucesso!');
+          setTimeout(() => {
+            router.push('/');
+          }, 1000);
         }
       } catch (loginError) {
         console.error('Erro no login automático:', loginError);
