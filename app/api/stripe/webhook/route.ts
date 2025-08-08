@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(textBody, sig!, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err) {
-    //console.error('Webhook Error:', err);
+    console.error('Webhook Error:', err);
     return NextResponse.json({ error: 'Webhook error' }, { status: 400 });
   }
 
@@ -27,24 +27,47 @@ export async function POST(req: Request) {
 
       try {
         if (session.metadata) {
-          const { userId, plan, amount } = session.metadata;
+          const { userId, plan, amount, paymentSessionId } = session.metadata;
 
           // Verifique os campos obrigatórios
           if (!userId || !plan || !amount) {
-            //console.error('Metadata is missing required fields:', session.metadata);
+            console.error('Metadata is missing required fields:', session.metadata);
             return NextResponse.json({ error: 'Missing metadata fields.' }, { status: 400 });
           }
 
-          // Verificar se o pagamento já existe no banco de dados
-          const existingPayment = await prisma.payment.findUnique({
-            where: { preferenceId: session.id },
+          // Buscar PaymentSession
+          let paymentSession = null;
+          if (paymentSessionId) {
+            paymentSession = await prisma.paymentSession.findUnique({
+              where: { id: paymentSessionId },
+            });
+          }
+
+          if (!paymentSession) {
+            // Tentar buscar por preferenceId
+            paymentSession = await prisma.paymentSession.findFirst({
+              where: { preferenceId: session.id },
+            });
+          }
+
+          if (!paymentSession) {
+            console.error('PaymentSession não encontrada para sessionId:', session.id);
+            return NextResponse.json({ error: 'PaymentSession não encontrada.' }, { status: 404 });
+          }
+
+          console.log('✅ PaymentSession encontrada:', {
+            id: paymentSession.id,
+            plan: paymentSession.plan,
+            amount: paymentSession.amount,
+            userId: paymentSession.userId,
+            status: paymentSession.status
           });
 
           const paymentDate = new Date();
           let expireDate: Date;
 
-          // Definir a data de expiração com base no plano
-          switch (plan) {
+          // Definir a data de expiração com base no plano da PaymentSession
+          switch (paymentSession.plan) {
             case 'monthly':
               expireDate = new Date(paymentDate);
               expireDate.setDate(paymentDate.getDate() + 30); // 30 dias
@@ -53,18 +76,27 @@ export async function POST(req: Request) {
               expireDate = new Date(paymentDate);
               expireDate.setMonth(paymentDate.getMonth() + 3); // 3 meses
               break;
-            case 'semiannual':
+            case 'semestral':
               expireDate = new Date(paymentDate);
               expireDate.setMonth(paymentDate.getMonth() + 6); // 6 meses
               break;
-            case 'annual':
+            case 'yearly':
               expireDate = new Date(paymentDate);
               expireDate.setFullYear(paymentDate.getFullYear() + 1); // 1 ano
+              break;
+            case 'lifetime':
+              expireDate = new Date(paymentDate);
+              expireDate.setFullYear(paymentDate.getFullYear() + 100); // 100 anos
               break;
             default:
               expireDate = new Date(paymentDate); // data atual se plano não reconhecido
               break;
           }
+
+          // Verificar se o pagamento já existe no banco de dados
+          const existingPayment = await prisma.payment.findUnique({
+            where: { preferenceId: session.id },
+          });
 
           if (existingPayment) {
             // Atualizar o pagamento existente
@@ -72,28 +104,39 @@ export async function POST(req: Request) {
               where: { preferenceId: session.id },
               data: {
                 status: 'paid',
-                plan,
+                plan: paymentSession.plan,
+                amount: paymentSession.amount,
               },
             });
-            //console.log(`Pagamento atualizado com sucesso para userId: ${userId}`);
+            console.log(`Pagamento atualizado com sucesso para userId: ${userId}`);
           } else {
-            //console.log(`Novo pagamento criado para userId: ${userId}`);
+            // Criar novo pagamento
+            await prisma.payment.create({
+              data: {
+                userId: paymentSession.userId,
+                plan: paymentSession.plan,
+                amount: paymentSession.amount,
+                transactionDate: paymentDate,
+                userEmail: session.customer_email || '',
+                status: 'paid',
+                preferenceId: session.id,
+              },
+            });
+            console.log(`Novo pagamento criado para userId: ${userId}`);
           }
 
-          // Atualizar a tabela PaymentSession usando preferenceId
-          await prisma.paymentSession.updateMany({
-            where: {
-              preferenceId: session.id, // Corrigido para preferenceId
-            },
+          // Atualizar a PaymentSession
+          await prisma.paymentSession.update({
+            where: { id: paymentSession.id },
             data: {
               status: 'paid',
             },
           });
-          //console.log(`PaymentSession atualizado com sucesso para userId: ${userId}`);
+          console.log(`PaymentSession atualizada com sucesso para userId: ${userId}`);
 
           // Atualizar o usuário com status premium
           await prisma.user.update({
-            where: { id: userId },
+            where: { id: paymentSession.userId },
             data: {
               premium: true,
               expireDate: expireDate,
@@ -102,19 +145,19 @@ export async function POST(req: Request) {
             },
           });
 
-          //console.log(`Usuário ${userId} atualizado para premium com expiração em ${expireDate}`);
+          console.log(`Usuário ${userId} atualizado para premium com expiração em ${expireDate}`);
         } else {
-          //console.error('Metadata is null or undefined');
+          console.error('Metadata is null or undefined');
           return NextResponse.json({ error: 'Metadata is null or undefined.' }, { status: 400 });
         }
       } catch (error) {
-        //console.error('Erro ao registrar/atualizar o pagamento, usuário ou paymentSession:', error);
+        console.error('Erro ao registrar/atualizar o pagamento, usuário ou paymentSession:', error);
         return NextResponse.json({ error: 'Erro ao registrar/atualizar o pagamento, usuário ou paymentSession.' }, { status: 500 });
       }
       break;
 
     default:
-      //console.warn(`Unhandled event type ${event.type}`);
+      console.warn(`Unhandled event type ${event.type}`);
   }
 
   return NextResponse.json({ received: true });

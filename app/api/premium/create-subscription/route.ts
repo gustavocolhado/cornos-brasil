@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth.config'
 import Stripe from 'stripe'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
+import { prisma } from '@/lib/prisma'
 
 // Configuração do Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -109,10 +110,28 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id || session.user.email || 'unknown'
     const userEmail = session.user.email || 'user@example.com'
 
+    // Criar PaymentSession primeiro
+    const paymentSession = await prisma.paymentSession.create({
+      data: {
+        plan: planId,
+        amount: plan.price / 100, // Converter de centavos para reais
+        userId: userId,
+        status: 'pending',
+      },
+    })
+
+    console.log('✅ PaymentSession criada:', {
+      id: paymentSession.id,
+      plan: paymentSession.plan,
+      amount: paymentSession.amount,
+      userId: paymentSession.userId,
+      status: paymentSession.status
+    })
+
     if (paymentMethod === 'stripe') {
-      return await handleStripeSubscription(plan, userEmail, userId)
+      return await handleStripeSubscription(plan, userEmail, userId, paymentSession.id)
     } else {
-      return await handleMercadoPagoSubscription(plan, userEmail, userId)
+      return await handleMercadoPagoSubscription(plan, userEmail, userId, paymentSession.id)
     }
   } catch (error) {
     console.error('Erro ao criar assinatura:', error)
@@ -126,13 +145,14 @@ export async function POST(request: NextRequest) {
 async function handleStripeSubscription(
   plan: { name: string; price: number; description: string },
   userEmail: string,
-  userId: string
+  userId: string,
+  paymentSessionId: string
 ) {
   try {
     // Garantir URLs válidas
     const baseUrl = process.env.HOST_URL
-    const successUrl = ensureValidUrl(baseUrl, '/premium/success?session_id={CHECKOUT_SESSION_ID}')
-    const cancelUrl = ensureValidUrl(baseUrl, '/premium/cancel')
+    const successUrl = ensureValidUrl(baseUrl, `/premium/success?session_id={CHECKOUT_SESSION_ID}&paymentSessionId=${paymentSessionId}`)
+    const cancelUrl = ensureValidUrl(baseUrl, `/premium/cancel`)
     
     console.log('URLs do Stripe:', { successUrl, cancelUrl })
 
@@ -160,12 +180,20 @@ async function handleStripeSubscription(
         userId,
         planId: plan.name.toLowerCase().replace(/\s+/g, '_'),
         amount: (plan.price / 100).toString(), // Valor em reais
+        paymentSessionId: paymentSessionId,
       },
+    })
+
+    // Atualizar PaymentSession com o preferenceId
+    await prisma.paymentSession.update({
+      where: { id: paymentSessionId },
+      data: { preferenceId: session.id },
     })
 
     return NextResponse.json({
       checkoutUrl: session.url,
       sessionId: session.id,
+      paymentSessionId: paymentSessionId,
     })
   } catch (error) {
     console.error('Erro ao criar sessão Stripe:', error)
@@ -179,15 +207,16 @@ async function handleStripeSubscription(
 async function handleMercadoPagoSubscription(
   plan: { name: string; price: number; description: string },
   userEmail: string,
-  userId: string
+  userId: string,
+  paymentSessionId: string
 ) {
   try {
     // Garantir URLs válidas
     const baseUrl = process.env.HOST_URL
-    const successUrl = ensureValidUrl(baseUrl, '/premium/success')
-    const failureUrl = ensureValidUrl(baseUrl, '/premium/cancel')
-    const pendingUrl = ensureValidUrl(baseUrl, '/premium/pending')
-    const webhookUrl = ensureValidUrl(baseUrl, '/api/mercado-pago/webhook')
+    const successUrl = ensureValidUrl(baseUrl, `/premium/success?paymentSessionId=${paymentSessionId}`)
+    const failureUrl = ensureValidUrl(baseUrl, `/premium/cancel`)
+    const pendingUrl = ensureValidUrl(baseUrl, `/premium/pending`)
+    const webhookUrl = ensureValidUrl(baseUrl, `/api/mercado-pago/webhook`)
     
     console.log('URLs do Mercado Pago:', { 
       successUrl, 
@@ -216,7 +245,7 @@ async function handleMercadoPagoSubscription(
         failure: failureUrl,
         pending: pendingUrl,
       },
-      external_reference: `${userId}_${plan.name.toLowerCase().replace(/\s+/g, '_')}`,
+      external_reference: `${userId}_${plan.name.toLowerCase().replace(/\s+/g, '_')}_${paymentSessionId}`,
       notification_url: webhookUrl,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
@@ -225,9 +254,16 @@ async function handleMercadoPagoSubscription(
     const preferenceClient = new Preference(mercadopago)
     const response = await preferenceClient.create({ body: preference })
 
+    // Atualizar PaymentSession com o preferenceId
+    await prisma.paymentSession.update({
+      where: { id: paymentSessionId },
+      data: { preferenceId: response.id },
+    })
+
     return NextResponse.json({
       initPoint: response.init_point,
       preferenceId: response.id,
+      paymentSessionId: paymentSessionId,
     })
   } catch (error) {
     console.error('Erro ao criar preferência Mercado Pago:', error)
@@ -235,5 +271,23 @@ async function handleMercadoPagoSubscription(
       { error: 'Erro ao processar pagamento com Mercado Pago' },
       { status: 500 }
     )
+  }
+} 
+
+// Função auxiliar para calcular a duração em dias
+function getDurationInDays(planId: string): number {
+  switch (planId) {
+    case 'monthly':
+      return 30
+    case 'quarterly':
+      return 90
+    case 'semestral':
+      return 180
+    case 'yearly':
+      return 365
+    case 'lifetime':
+      return 36500 // 100 anos
+    default:
+      return 30
   }
 } 

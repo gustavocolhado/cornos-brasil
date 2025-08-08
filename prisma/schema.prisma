@@ -176,6 +176,8 @@ model User {
   promotions  Promotion[]  // Um usuário pode ter várias promoções
   campaignTracking CampaignTracking[] // Relacionamento com tracking de campanhas
   campaignConversions CampaignConversion[] // Relacionamento com conversões de campanhas
+  paymentSessions PaymentSession[] // Relacionamento com sessões de pagamento
+  affiliateSessions PaymentSession[] @relation("AffiliateSessions") // Relacionamento com sessões de pagamento como afiliado
 
   @@map("users")
 }
@@ -239,11 +241,11 @@ model Payment {
   transactionDate DateTime @default(now())
   userEmail    String
   status       String
-  paymentId    Int?
+  paymentId    Int?     @unique
   duration     Int?
   promotionCode String?
-  preferenceId     String? @unique
-  affiliateId  String?
+  preferenceId String?  @unique
+  affiliateId  String?  @db.ObjectId
   campaignId   String? // ID da campanha quando pagamento via campanha
 
   user      User     @relation(fields: [userId], references: [id])
@@ -252,14 +254,28 @@ model Payment {
 }
 
 model PaymentSession {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  plan       String
-  amount     Float
-  userId     String
-  status     String   @default("pending")
-  createdAt  DateTime @default(now())
-  paymentId  Int?     // Adicionar este campo para vincular ao Payment
-  preferenceId     String? @unique
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  plan         String   // Tipo do plano (monthly, quarterly, semiannual, annual, lifetime)
+  amount       Float    // Valor do pagamento
+  userId       String   @db.ObjectId // ID do usuário
+  status       String   @default("pending") // Status da sessão (pending, paid, cancelled, expired)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  paymentId    Int?     // ID do pagamento quando confirmado
+  preferenceId String?  @unique // ID da preferência (Mercado Pago) ou session ID (Stripe)
+  paymentMethod String? // Método de pagamento (stripe, mercadopago)
+  userEmail    String?  // Email do usuário
+  description  String?  // Descrição do plano
+  duration     Int?     // Duração em dias
+  promotionCode String? // Código de promoção se aplicável
+  affiliateId  String?  @db.ObjectId // ID do afiliado se aplicável
+  campaignId   String?  // ID da campanha se aplicável
+  
+  // Relacionamentos
+  user         User     @relation(fields: [userId], references: [id])
+  affiliate    User?    @relation("AffiliateSessions", fields: [affiliateId], references: [id])
+  
+  @@map("payment_sessions")
 }
 
 
