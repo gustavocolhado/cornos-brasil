@@ -2,12 +2,20 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia', // Use a versão correta
-});
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-10-28.acacia', // Use a versão correta
+    })
+  : null;
 
 // Função para processar a requisição POST do webhook
 export async function POST(req: Request) {
+  // Verificar se o Stripe está configurado
+  if (!stripe) {
+    console.error('Stripe não está configurado');
+    return NextResponse.json({ error: 'Stripe não está configurado' }, { status: 500 });
+  }
+
   const sig = req.headers.get('stripe-signature');
   const body = await req.arrayBuffer();
   const textBody = new TextDecoder().decode(body);

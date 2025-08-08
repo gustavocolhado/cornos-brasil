@@ -3,9 +3,11 @@ import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 
 // Configuração do Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
-})
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-10-28.acacia',
+    })
+  : null
 
 interface CreateStripeRequest {
   planId: string
@@ -62,6 +64,14 @@ function ensureValidUrl(baseUrl: string | undefined, path: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o Stripe está configurado
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe não está configurado' },
+        { status: 500 }
+      )
+    }
+
     const body: CreateStripeRequest = await request.json()
     const { planId, email, referralData } = body
 

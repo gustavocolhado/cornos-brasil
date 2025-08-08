@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
-})
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-10-28.acacia',
+    })
+  : null
 
 // Função helper para obter duração do plano em dias
 function getPlanDuration(planId: string): number {
@@ -20,6 +22,14 @@ function getPlanDuration(planId: string): number {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o Stripe está configurado
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe não está configurado' },
+        { status: 500 }
+      )
+    }
+
     const { sessionId, email } = await request.json()
 
     if (!sessionId || !email) {
