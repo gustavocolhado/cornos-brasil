@@ -16,7 +16,7 @@ function getPlanDuration(planId: string): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, confirmPassword, planId, paymentId, amount, source, campaign } = await request.json()
+    let { email, password, confirmPassword, planId, paymentId, amount, source, campaign } = await request.json()
 
     // Validação básica
     if (!email || !password || !confirmPassword) {
@@ -65,18 +65,81 @@ export async function POST(request: NextRequest) {
     // Hash da nova senha
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Atualizar senha e remover flag de senha temporária
+         // Buscar pagamentos pendentes do usuário
+     const pendingPayments = await prisma.payment.findMany({
+       where: {
+         userId: user.id,
+         status: 'pending'
+       },
+       orderBy: {
+         transactionDate: 'desc'
+       }
+     })
+
+    const paymentDate = new Date()
+    let expireDate: Date
+
+    // Se há pagamentos pendentes, processar o mais recente
+    if (pendingPayments.length > 0) {
+      const latestPayment = pendingPayments[0]
+      planId = latestPayment.plan
+      amount = latestPayment.amount * 100 // Converter para centavos
+
+      // Atualizar pagamento para aprovado
+      await prisma.payment.update({
+        where: { id: latestPayment.id },
+        data: { status: 'paid' }
+      })
+
+      console.log('✅ Pagamento pendente processado:', latestPayment.id)
+    }
+
+    // Definir data de expiração baseada no plano
+    if (planId) {
+      switch (planId) {
+        case 'monthly':
+          expireDate = new Date(paymentDate)
+          expireDate.setDate(paymentDate.getDate() + 30)
+          break
+        case 'quarterly':
+          expireDate = new Date(paymentDate)
+          expireDate.setMonth(paymentDate.getMonth() + 3)
+          break
+        case 'semiannual':
+          expireDate = new Date(paymentDate)
+          expireDate.setMonth(paymentDate.getMonth() + 6)
+          break
+        case 'yearly':
+          expireDate = new Date(paymentDate)
+          expireDate.setFullYear(paymentDate.getFullYear() + 1)
+          break
+        case 'lifetime':
+          expireDate = new Date(paymentDate)
+          expireDate.setFullYear(paymentDate.getFullYear() + 100)
+          break
+        default:
+          expireDate = new Date(paymentDate)
+          break
+      }
+    } else {
+      expireDate = new Date(paymentDate)
+    }
+
+    // Atualizar senha e ativar premium
     const updatedUser = await prisma.user.update({
       where: { email },
       data: {
         password: hashedPassword,
         tempPassword: false,
         premium: true, // Ativar premium após definir senha
+        expireDate: expireDate,
+        paymentDate: paymentDate,
+        paymentStatus: 'paid',
       }
     })
 
-    // Criar registro na tabela Payment
-    if (planId && amount) {
+    // Criar registro na tabela Payment se não existir
+    if (planId && amount && pendingPayments.length === 0) {
       try {
         const payment = await prisma.payment.create({
           data: {
@@ -84,7 +147,7 @@ export async function POST(request: NextRequest) {
             plan: planId,
             amount: amount / 100, // Converter de centavos para reais
             userEmail: email,
-            status: 'approved',
+            status: 'paid',
             paymentId: paymentId || null,
             duration: getPlanDuration(planId),
             preferenceId: `landing_page_${Date.now()}`,
@@ -116,8 +179,8 @@ export async function POST(request: NextRequest) {
             userId: user.id,
             source: campaignTracking.source,
             campaign: campaignTracking.campaign,
-            planId: null, // Será atualizado pelo webhook
-            amount: 0, // Será atualizado pelo webhook
+            planId: planId || null,
+            amount: amount ? amount / 100 : 0,
             convertedAt: new Date()
           }
         })
@@ -143,7 +206,8 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Senha atualizada e premium ativado:', { 
       userId: user.id, 
-      email 
+      email,
+      expireDate
     })
 
     return NextResponse.json({

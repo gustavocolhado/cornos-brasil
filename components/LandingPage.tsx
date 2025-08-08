@@ -119,17 +119,34 @@ export default function LandingPage() {
 
   // Processar retorno do Stripe
   useEffect(() => {
+    console.log('🔍 useEffect - Processando retorno do Stripe executado');
+    
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const sessionId = urlParams.get('session_id');
     const canceled = urlParams.get('canceled');
 
-    if (success === 'true' && sessionId && email) {
-      // Processar retorno do Stripe
-      processStripeReturn(sessionId, email);
+    console.log('📊 Parâmetros da URL:', { success, sessionId, canceled, email });
+
+    if (success === 'true' && sessionId) {
+      // Buscar email do localStorage ou usar email atual
+      const storedEmail = localStorage.getItem('landingPageEmail') || email;
+      
+      console.log('📧 Email encontrado:', storedEmail);
+      
+      if (storedEmail) {
+        console.log('🔄 Processando retorno do Stripe:', { sessionId, email: storedEmail });
+        processStripeReturn(sessionId, storedEmail);
+      } else {
+        console.log('⚠️ Email não encontrado para processar retorno do Stripe');
+        setError('Erro: Email não encontrado. Tente novamente.');
+      }
     } else if (canceled === 'true') {
       // Usuário cancelou o pagamento
+      console.log('❌ Pagamento cancelado pelo usuário');
       setError('Pagamento cancelado. Tente novamente.');
+    } else {
+      console.log('ℹ️ Nenhum parâmetro de retorno encontrado');
     }
   }, [email]);
 
@@ -151,6 +168,8 @@ export default function LandingPage() {
   // Função para processar retorno do Stripe
   const processStripeReturn = async (sessionId: string, userEmail: string) => {
     try {
+      console.log('🔄 Iniciando processamento do retorno do Stripe...');
+      
       const response = await fetch('/api/landing-page/process-stripe-return', {
         method: 'POST',
         headers: {
@@ -162,14 +181,25 @@ export default function LandingPage() {
         }),
       });
 
+      const data = await response.json();
+      console.log('📊 Resposta do processamento:', data);
+
       if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Payment Stripe processado:', data);
+        console.log('✅ Payment Stripe processado com sucesso');
+        
+        // Definir o email atual se não estiver definido
+        if (!email) {
+          setEmail(userEmail);
+        }
+        
         // Mostrar formulário de senha após processar payment
         setShowPasswordForm(true);
+        setShowModal(true); // Garantir que o modal está aberto
+        
+        console.log('✅ Modal de senha aberto');
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Erro ao processar pagamento Stripe');
+        console.error('❌ Erro na resposta:', data);
+        setError(data.error || 'Erro ao processar pagamento Stripe');
       }
     } catch (error) {
       console.error('❌ Erro ao processar retorno do Stripe:', error);
@@ -415,8 +445,9 @@ export default function LandingPage() {
       const accountData = await response.json();
       console.log('✅ Conta criada:', accountData);
 
-      // Salvar userId no localStorage para usar depois
+      // Salvar userId e email no localStorage para usar depois
       localStorage.setItem('landingPageUserId', accountData.userId);
+      localStorage.setItem('landingPageEmail', email);
 
       setShowPaymentMethod(true);
     } catch (error) {
@@ -605,6 +636,7 @@ export default function LandingPage() {
       
       // Limpar dados do localStorage
       localStorage.removeItem('landingPageUserId');
+      localStorage.removeItem('landingPageEmail');
       localStorage.removeItem('campaignData');
       
       // Fazer login automático usando NextAuth

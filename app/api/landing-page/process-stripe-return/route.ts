@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('🔄 Processando retorno do Stripe para Landing Page:', { sessionId, email })
+
     // Buscar a sessão do Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId)
     
@@ -63,7 +65,23 @@ export async function POST(request: NextRequest) {
     const planId = session.metadata?.planId
     const amount = session.metadata?.amount ? parseFloat(session.metadata.amount) * 100 : 0 // Converter para centavos
 
-    // Criar registro na tabela Payment
+    console.log('📊 Dados do pagamento:', { planId, amount, userId: user.id })
+
+    // Verificar se o usuário já tem senha definida
+    if (!user.tempPassword) {
+      console.log('✅ Usuário já tem senha definida, premium será ativado pelo webhook')
+      return NextResponse.json({
+        success: true,
+        message: 'Pagamento processado com sucesso',
+        requiresPassword: false,
+        payment: {
+          planId,
+          amount: amount / 100
+        }
+      })
+    }
+
+    // Usuário ainda tem senha temporária, criar registro de pagamento pendente
     if (planId && amount > 0) {
       try {
         const payment = await prisma.payment.create({
@@ -72,14 +90,14 @@ export async function POST(request: NextRequest) {
             plan: planId,
             amount: amount / 100, // Converter de centavos para reais
             userEmail: email,
-            status: 'approved',
+            status: 'pending', // Status pendente até definir senha
             paymentId: parseInt(sessionId.replace('cs_', '')),
             duration: getPlanDuration(planId),
             preferenceId: `stripe_${sessionId}`,
           }
         })
 
-        console.log('✅ Payment Stripe registrado:', {
+        console.log('✅ Payment Stripe registrado (pendente):', {
           id: payment.id,
           plan: payment.plan,
           amount: payment.amount,
@@ -90,6 +108,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           message: 'Payment registrado com sucesso',
+          requiresPassword: true,
           payment: {
             id: payment.id,
             plan: payment.plan,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { prisma } from '@/lib/prisma'
 
 // Configuração do Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -90,6 +91,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Buscar ou criar usuário
+    let user = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado. Crie uma conta primeiro.' },
+        { status: 404 }
+      )
+    }
+
     // Garantir URLs válidas
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     const successUrl = ensureValidUrl(baseUrl, '/c?success=true&session_id={CHECKOUT_SESSION_ID}')
@@ -118,6 +131,7 @@ export async function POST(request: NextRequest) {
       cancel_url: cancelUrl,
       customer_email: email,
       metadata: {
+        userId: user.id, // ✅ Incluir userId nos metadados
         planId,
         email,
         source: referralData?.source || 'landing_page',
@@ -130,6 +144,7 @@ export async function POST(request: NextRequest) {
       sessionId: session.id,
       planId,
       email,
+      userId: user.id,
       value: plan.price / 100,
       source: referralData?.source || 'landing_page'
     })
