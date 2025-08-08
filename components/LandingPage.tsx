@@ -109,6 +109,14 @@ export default function LandingPage() {
     captureCampaignData();
   }, []);
 
+  // Redirecionar usuários premium para a página inicial
+  useEffect(() => {
+    if (session?.user?.premium) {
+      console.log('🔄 Usuário premium detectado, redirecionando para página inicial...');
+      router.push('/');
+    }
+  }, [session, router]);
+
   // Processar retorno do Stripe
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -169,11 +177,6 @@ export default function LandingPage() {
     }
   };
 
-  // Se o usuário estiver logado, não renderizar a landing page
-  if (session) {
-    return null;
-  }
-
   const faqData = [
     {
       question: "Minha privacidade e segurança estão garantidas ?",
@@ -213,7 +216,7 @@ export default function LandingPage() {
     {
       id: 'monthly',
       title: 'Mensal',
-      price: 50, // R$ 19,90 em centavos
+      price: 1990, // R$ 19,90 em centavos
       description: 'Acesso completo por 1 mês',
       popular: false
     },
@@ -710,15 +713,46 @@ export default function LandingPage() {
       {/* Header Responsivo */}
       <header className="w-full bg-black px-4 py-4 md:px-8 md:py-6">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
-                     <div className="text-yellow-400 font-bold text-xl md:text-2xl"><Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} /></div>
+          <div className="text-yellow-400 font-bold text-xl md:text-2xl">
+            <Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} />
+          </div>
           <div className="flex gap-2 md:gap-4">
-            <Link href="/login" className="px-3 py-2 md:px-6 md:py-3 bg-black text-white border border-white rounded text-sm md:text-base font-bold hover:bg-white hover:text-black transition">ENTRAR</Link>
-            <button 
-              onClick={scrollToPlans}
-              className="px-3 py-2 md:px-6 md:py-3 bg-red-600 text-white rounded text-sm md:text-base font-bold hover:bg-red-700 transition"
-            >
-              ASSINAR AGORA
-            </button>
+            {session ? (
+              // Usuário logado
+              <>
+                <div className="flex items-center gap-2 text-white">
+                  <FaUserCircle className="text-red-500" />
+                  <span className="text-sm md:text-base font-medium">
+                    Olá, {session.user?.name || session.user?.email || 'Usuário'}
+                  </span>
+                  {session.user?.premium && (
+                    <FaCrown className="text-yellow-500 text-sm" title="Usuário Premium" />
+                  )}
+                </div>
+                <Link 
+                  href="/" 
+                  className="px-3 py-2 md:px-6 md:py-3 bg-red-600 text-white rounded text-sm md:text-base font-bold hover:bg-red-700 transition"
+                >
+                  ÁREA DO USUÁRIO
+                </Link>
+              </>
+            ) : (
+              // Usuário não logado
+              <>
+                <Link 
+                  href="/login" 
+                  className="px-3 py-2 md:px-6 md:py-3 bg-black text-white border border-white rounded text-sm md:text-base font-bold hover:bg-white hover:text-black transition"
+                >
+                  ENTRAR
+                </Link>
+                <button 
+                  onClick={scrollToPlans}
+                  className="px-3 py-2 md:px-6 md:py-3 bg-red-600 text-white rounded text-sm md:text-base font-bold hover:bg-red-700 transition"
+                >
+                  ASSINAR AGORA
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -756,6 +790,72 @@ export default function LandingPage() {
           <h2 className="text-lg md:text-2xl font-bold text-white">LIBERAÇÃO IMEDIATA DO ACESSO!</h2>
         </div>
       </div>
+
+      {/* Seção para Usuários Logados */}
+      {session && (
+        <div className="px-4 py-6 md:px-8 md:py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-500/30 rounded-lg p-6 md:p-8">
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <FaUserCircle className="text-green-500 text-2xl" />
+                  <h2 className="text-2xl md:text-3xl font-bold text-white">
+                    Bem-vindo de volta, {session.user?.name || session.user?.email || 'Usuário'}!
+                  </h2>
+                </div>
+                
+                {session.user?.premium ? (
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <FaCrown className="text-yellow-500 text-xl" />
+                    <span className="text-yellow-400 font-bold text-lg">CONTA PREMIUM ATIVA</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <FaUserCircle className="text-blue-500 text-xl" />
+                    <span className="text-blue-400 font-bold text-lg">CONTA GRATUITA</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="text-center">
+                  <div className="bg-black/50 rounded-lg p-4">
+                    <h3 className="text-white font-bold text-lg mb-2">Status da Conta</h3>
+                    <p className="text-neutral-300">
+                      {session.user?.premium 
+                        ? 'Sua conta premium está ativa e você tem acesso completo ao conteúdo!'
+                        : 'Atualize para premium para ter acesso completo ao conteúdo exclusivo.'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="bg-black/50 rounded-lg p-4">
+                    <h3 className="text-white font-bold text-lg mb-2">Ações Rápidas</h3>
+                    <div className="flex flex-col gap-2">
+                      <Link 
+                        href="/" 
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold transition"
+                      >
+                        Ir para Área do Usuário
+                      </Link>
+                      {!session.user?.premium && (
+                        <button 
+                          onClick={scrollToPlans}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold transition"
+                        >
+                          Atualizar para Premium
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Plano Selecionado - Se houver */}
       {selectedPlan && (
@@ -880,7 +980,28 @@ export default function LandingPage() {
              <p className="text-neutral-300 text-sm md:text-base">Planos flexíveis que se adaptam às suas necessidades</p>
            </div>
 
-                     {/* Grid de Planos */}
+           {/* Mensagem para usuários premium */}
+           {session?.user?.premium && (
+             <div className="max-w-2xl mx-auto mb-8">
+               <div className="bg-gradient-to-r from-green-900/20 to-yellow-900/20 border border-green-500/30 rounded-lg p-6 text-center">
+                 <div className="flex items-center justify-center gap-3 mb-3">
+                   <FaCrown className="text-yellow-500 text-2xl" />
+                   <h3 className="text-xl font-bold text-white">Você já é Premium!</h3>
+                 </div>
+                 <p className="text-neutral-300 mb-4">
+                   Sua conta premium está ativa e você tem acesso completo ao conteúdo exclusivo.
+                 </p>
+                 <Link 
+                   href="/" 
+                   className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded font-bold transition"
+                 >
+                   Ir para Área do Usuário
+                 </Link>
+               </div>
+             </div>
+           )}
+
+           {/* Grid de Planos */}
            <div className="max-w-2xl mx-auto space-y-4">
              {plans.map((plan) => (
                <div 
@@ -889,8 +1010,8 @@ export default function LandingPage() {
                    selectedPlan?.id === plan.id 
                      ? 'border-green-500 bg-green-900/20' 
                      : ''
-                 }`}
-                 onClick={() => handlePlanSelect(plan)}
+                 } ${session?.user?.premium ? 'opacity-50 cursor-not-allowed' : ''}`}
+                 onClick={() => !session?.user?.premium && handlePlanSelect(plan)}
                >
 
                  {/* Badge Popular */}
