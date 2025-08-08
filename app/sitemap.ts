@@ -6,7 +6,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDate = new Date()
   
   try {
-    // Buscar todos os vídeos do banco
+    console.log('🔍 Iniciando geração do sitemap...')
+    
+    // Buscar todos os vídeos não premium do banco
     const videos = await prisma.video.findMany({
       select: {
         id: true,
@@ -17,12 +19,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
       where: {
         // Incluir apenas vídeos não premium para SEO público
-        premium: false
+        premium: false,
+        // Garantir que tem URL válida
+        url: {
+          not: null
+        }
       },
       orderBy: {
         updated_at: 'desc'
       }
+      // Removido take: 1000 para incluir todos os vídeos
     })
+
+    console.log(`✅ Encontrados ${videos.length} vídeos`)
 
     // Buscar todos os criadores
     const creators = await prisma.creator.findMany({
@@ -34,10 +43,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       orderBy: {
         update_at: 'desc'
       }
+      // Removido take: 100 para incluir todos os criadores
     })
 
+    console.log(`✅ Encontrados ${creators.length} criadores`)
+
     // Buscar categorias únicas dos vídeos
-    const categories = await prisma.video.findMany({
+    const videoCategories = await prisma.video.findMany({
       select: {
         category: true
       },
@@ -46,29 +58,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           isEmpty: false
         }
       }
+      // Removido take: 1000 para incluir todas as categorias
     })
 
     // Extrair categorias únicas
     const uniqueCategories = Array.from(new Set(
-      categories.flatMap(video => video.category)
-    )).filter(Boolean)
+      videoCategories.flatMap(video => video.category || [])
+    )).filter(Boolean) // Removido slice(0, 50) para incluir todas as categorias
 
-    // Buscar tags únicas através da tabela de relacionamento
-    const videoTags = await prisma.videoTag.findMany({
-      include: {
-        tag: {
-          select: {
-            name: true,
-            slug: true
-          }
-        }
-      }
-    })
-
-    // Extrair tags únicas
-    const uniqueTags = Array.from(new Set(
-      videoTags.map(vt => vt.tag.name)
-    )).filter(Boolean)
+    console.log(`✅ Encontradas ${uniqueCategories.length} categorias`)
 
     // Páginas estáticas principais
     const staticPages = [
@@ -146,61 +144,54 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }))
 
-    // URLs das tags
-    const tagUrls = uniqueTags.map(tag => ({
-      url: `${baseUrl}/videos?search=${encodeURIComponent(tag)}`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly' as const,
-      priority: 0.5,
-    }))
-
     // Combinar todas as URLs
     const allUrls = [
       ...staticPages,
       ...videoUrls,
       ...creatorUrls,
-      ...categoryUrls,
-      ...tagUrls
+      ...categoryUrls
     ]
 
-    console.log(`Sitemap gerado com ${allUrls.length} URLs:`)
+    console.log(`✅ Sitemap gerado com ${allUrls.length} URLs:`)
     console.log(`- ${staticPages.length} páginas estáticas`)
     console.log(`- ${videoUrls.length} vídeos`)
     console.log(`- ${creatorUrls.length} criadores`)
     console.log(`- ${categoryUrls.length} categorias`)
-    console.log(`- ${tagUrls.length} tags`)
 
     return allUrls
 
   } catch (error) {
-    console.error('Erro ao gerar sitemap:', error)
+    console.error('❌ Erro ao gerar sitemap:', error)
     
     // Fallback para páginas estáticas em caso de erro
-    return [
+    const fallbackUrls = [
       {
         url: baseUrl,
         lastModified: currentDate,
-        changeFrequency: 'daily',
+        changeFrequency: 'daily' as const,
         priority: 1,
       },
       {
         url: `${baseUrl}/videos`,
         lastModified: currentDate,
-        changeFrequency: 'hourly',
+        changeFrequency: 'hourly' as const,
         priority: 0.9,
       },
       {
         url: `${baseUrl}/creators`,
         lastModified: currentDate,
-        changeFrequency: 'daily',
+        changeFrequency: 'daily' as const,
         priority: 0.8,
       },
       {
         url: `${baseUrl}/premium`,
         lastModified: currentDate,
-        changeFrequency: 'weekly',
+        changeFrequency: 'weekly' as const,
         priority: 0.7,
       },
     ]
+    
+    console.log('⚠️ Usando fallback com páginas estáticas apenas')
+    return fallbackUrls
   }
 } 
