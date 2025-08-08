@@ -622,6 +622,9 @@ export default function LandingPage() {
           // Sucesso! Aguardar um pouco para o login ser processado
           console.log('✅ Login automático realizado com sucesso!');
           setTimeout(() => {
+            // Fechar o modal primeiro
+            closeModal();
+            // Redirecionar para a página inicial usando router
             router.push('/');
           }, 1000);
         }
