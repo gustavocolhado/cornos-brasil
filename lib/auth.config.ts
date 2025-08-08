@@ -54,6 +54,7 @@ export const authOptions: AuthOptions = {
           premium: user.premium,
           username: user.username,
           name: user.name,
+          access: user.access,
         }
       },
     }),
@@ -158,6 +159,7 @@ export const authOptions: AuthOptions = {
             email: user.email,
             premium: user.premium,
             expireDate: user.premium ? user.expireDate : null,
+            access: user.access,
           }
         }
       }
@@ -172,6 +174,7 @@ export const authOptions: AuthOptions = {
         token.premium = user.premium
         token.expireDate = user.expireDate || null
         token.email = user.email
+        token.access = user.access
       }
 
       // Atualiza o token quando o usuário faz login

@@ -1,18 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { 
-  Play, 
-  Pause, 
-  Volume2, 
-  VolumeX, 
-  Maximize, 
-  Minimize,
-  SkipBack,
-  SkipForward,
-  Settings,
-  RotateCcw
-} from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import videojs from 'video.js'
+import 'video.js/dist/video-js.css'
+import type Player from 'video.js/dist/types/player'
 
 interface PlayerProps {
   videoUrl: string
@@ -23,9 +14,194 @@ interface PlayerProps {
   autoPlay?: boolean
   muted?: boolean
   loop?: boolean
+  controls?: boolean
+  preload?: 'auto' | 'metadata' | 'none'
+  fluid?: boolean
+  responsive?: boolean
+  aspectRatio?: string
 }
 
-export default function Player({ 
+// Função para tentar diferentes formatos de vídeo
+const tryDifferentFormats = async (videoId: string): Promise<string> => {
+  const formats = [
+    `https://medias.cornosbrasilvip.com/video/${videoId}/index.m3u8`,
+    `https://medias.cornosbrasilvip.com/video/${videoId}/index.mp4`,
+    `https://medias.cornosbrasilvip.com/video/${videoId}/index.m3u`
+  ]
+  
+  console.log('🔄 tryDifferentFormats: Tentando formatos para ID:', videoId)
+  
+  for (const format of formats) {
+    try {
+      console.log('🔄 tryDifferentFormats: Testando formato:', format)
+      const response = await fetch(format, { method: 'HEAD' })
+      if (response.ok) {
+        console.log('✅ tryDifferentFormats: Formato encontrado:', format)
+        return format
+      }
+    } catch (error) {
+      console.log('❌ tryDifferentFormats: Erro ao testar formato:', format, error)
+    }
+  }
+  
+  // Se nenhum formato funcionar, retorna o primeiro (m3u8)
+  console.log('⚠️ tryDifferentFormats: Nenhum formato funcionou, retornando m3u8')
+  return formats[0]
+}
+
+// Função para detectar e processar URLs de iframe
+const processIframeUrl = (url: string): string => {
+  if (!url) return url
+  
+  console.log('🔍 processIframeUrl: Verificando URL:', url)
+  
+  // Verificar se é uma URL de iframe (contém /embed/ e termina com número)
+  if (url.includes('/embed/') && url.match(/\/embed\/\d+/)) {
+    console.log('🔍 processIframeUrl: URL de iframe detectada:', url)
+    
+    // Extrair o ID da URL
+    // Exemplo: https://videos.cornosbrasil.com.br/embed/2524 -> ID: 2524
+    const embedMatch = url.match(/\/embed\/(\d+)/)
+    if (embedMatch) {
+      const videoId = embedMatch[1]
+      console.log('🔍 processIframeUrl: ID extraído:', videoId)
+      
+      // Construir a URL do vídeo (tentando primeiro m3u8, depois mp4)
+      const videoUrl = `https://medias.cornosbrasilvip.com/videos/${videoId}/index.m3u8`
+      console.log('🔍 processIframeUrl: URL do vídeo construída (m3u8):', videoUrl)
+      
+      return videoUrl
+    } else {
+      console.log('❌ processIframeUrl: Não foi possível extrair o ID da URL de iframe')
+      return url
+    }
+  }
+  
+  console.log('🔍 processIframeUrl: Não é uma URL de iframe')
+  return url
+}
+
+// Função para corrigir URLs malformadas
+const fixUrl = (url: string): string => {
+  if (!url) return url
+  
+  console.log('🔧 fixUrl: URL original:', url)
+  
+  // Verificar se há duplicação de domínio (padrão: https://domain1.com/https://domain2.com/...)
+  if (url.includes('https://') && url.split('https://').length > 2) {
+    // Encontrar a segunda ocorrência de https://
+    const parts = url.split('https://')
+    if (parts.length >= 3) {
+      // Pegar apenas a parte após o segundo https://
+      const fixedUrl = 'https://' + parts.slice(2).join('https://')
+      console.log('🔧 fixUrl: URL corrigida (https):', fixedUrl)
+      return fixedUrl
+    }
+  }
+  
+  // Verificar se há duplicação de http://
+  if (url.includes('http://') && url.split('http://').length > 2) {
+    const parts = url.split('http://')
+    if (parts.length >= 3) {
+      const fixedUrl = 'http://' + parts.slice(2).join('http://')
+      console.log('🔧 fixUrl: URL corrigida (http):', fixedUrl)
+      return fixedUrl
+    }
+  }
+  
+  // Verificar se há duplicação de domínio com padrão específico
+  // Exemplo: https://cdn.cornosbrasilvip.com/https://medias.cornosbrasilvip.com/...
+  if (url.includes('https://') && url.includes('/https://')) {
+    const secondHttpsIndex = url.indexOf('/https://')
+    if (secondHttpsIndex !== -1) {
+      const fixedUrl = url.substring(secondHttpsIndex + 1) // Remove o '/' inicial
+      console.log('🔧 fixUrl: URL corrigida (padrão específico):', fixedUrl)
+      return fixedUrl
+    }
+  }
+  
+  // Verificar se há duplicação de domínio com padrão específico (http)
+  if (url.includes('http://') && url.includes('/http://')) {
+    const secondHttpIndex = url.indexOf('/http://')
+    if (secondHttpIndex !== -1) {
+      const fixedUrl = url.substring(secondHttpIndex + 1) // Remove o '/' inicial
+      console.log('🔧 fixUrl: URL corrigida (padrão específico http):', fixedUrl)
+      return fixedUrl
+    }
+  }
+  
+  console.log('🔧 fixUrl: URL não precisa de correção')
+  return url
+}
+
+// Função para testar se a URL é acessível
+const testUrl = async (url: string): Promise<boolean> => {
+  try {
+    console.log('🔍 testUrl: Testando URL:', url)
+    const response = await fetch(url, { method: 'HEAD' })
+    const isAccessible = response.ok
+    console.log('🔍 testUrl: Resultado:', isAccessible ? '✅ Acessível' : '❌ Não acessível')
+    return isAccessible
+  } catch (error) {
+    console.log('🔍 testUrl: Erro ao testar URL:', error)
+    return false
+  }
+}
+
+// Função para detectar o tipo de vídeo baseado na URL
+const getVideoType = (url: string): string => {
+  if (!url) {
+    console.log('🔍 getVideoType: URL vazia, retornando video/mp4')
+    return 'video/mp4'
+  }
+  
+  const extension = url.split('.').pop()?.toLowerCase()
+  console.log('🔍 getVideoType: URL:', url, 'Extensão:', extension)
+  
+  switch (extension) {
+    case 'm3u8':
+    case 'm3u':
+      console.log('🔍 getVideoType: Detectado HLS stream')
+      return 'application/x-mpegURL'
+    case 'mp4':
+      console.log('🔍 getVideoType: Detectado MP4')
+      return 'video/mp4'
+    case 'webm':
+      console.log('🔍 getVideoType: Detectado WebM')
+      return 'video/webm'
+    case 'ogg':
+      console.log('🔍 getVideoType: Detectado OGG')
+      return 'video/ogg'
+    default:
+      console.log('🔍 getVideoType: Extensão não reconhecida, usando MP4 como padrão')
+      return 'video/mp4'
+  }
+}
+
+// Função para validar URL
+const validateUrl = (url: string): boolean => {
+  if (!url) {
+    console.log('❌ validateUrl: URL vazia')
+    return false
+  }
+  
+  try {
+    // Tentar criar um objeto URL
+    new URL(url)
+    console.log('✅ validateUrl: URL válida:', url)
+    return true
+  } catch {
+    // Se falhar, pode ser um caminho relativo
+    if (url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
+      console.log('✅ validateUrl: Caminho relativo válido:', url)
+      return true
+    }
+    console.log('❌ validateUrl: URL inválida:', url)
+    return false
+  }
+}
+
+export default function VideoJSPlayer({ 
   videoUrl, 
   poster, 
   title, 
@@ -33,310 +209,307 @@ export default function Player({
   onLoad, 
   autoPlay = false, 
   muted = false, 
-  loop = false 
+  loop = false,
+  controls = true,
+  preload = 'metadata',
+  fluid = true,
+  responsive = true,
+  aspectRatio = '16:9'
 }: PlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const progressRef = useRef<HTMLDivElement>(null)
-  const volumeSliderRef = useRef<HTMLDivElement>(null)
-  
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(muted)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(1)
-  const [showControls, setShowControls] = useState(true)
+  const videoRef = useRef<HTMLDivElement>(null)
+  const playerRef = useRef<Player | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false)
-  const [buffered, setBuffered] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
-  const [hasMoved, setHasMoved] = useState(false)
-  const isDraggingRef = useRef(false)
 
-  // Formatar tempo em MM:SS
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
+  // Processar URL de iframe e corrigir URLs malformadas
+  const processedVideoUrl = processIframeUrl(videoUrl)
+  const correctedVideoUrl = fixUrl(processedVideoUrl)
+  const correctedPosterUrl = poster ? fixUrl(poster) : poster
 
-  // Toggle play/pause
-  const togglePlay = useCallback(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
+  // Log inicial
+  useEffect(() => {
+    console.log('🎬 VideoJSPlayer: Inicializando com URL:', correctedVideoUrl)
+    console.log('🎬 VideoJSPlayer: Poster:', correctedPosterUrl)
+    console.log('🎬 VideoJSPlayer: Title:', title)
+  }, [correctedVideoUrl, correctedPosterUrl, title])
+
+  // Inicializar o player
+  useEffect(() => {
+    if (!videoRef.current) {
+      console.log('❌ VideoJSPlayer: videoRef não disponível')
+      return
+    }
+
+    if (!correctedVideoUrl) {
+      console.log('❌ VideoJSPlayer: videoUrl não fornecida')
+      setError('URL do vídeo não fornecida')
+      return
+    }
+
+    if (!validateUrl(correctedVideoUrl)) {
+      console.log('❌ VideoJSPlayer: URL inválida:', correctedVideoUrl)
+      setError('URL do vídeo inválida')
+      onError?.('URL do vídeo inválida')
+      return
+    }
+
+    console.log('🎬 VideoJSPlayer: Criando elemento video-js')
+    
+    // Criar o elemento video
+    const videoElement = document.createElement('video-js')
+    videoElement.className = 'video-js vjs-big-play-centered vjs-fluid'
+    videoElement.setAttribute('data-setup', '{}')
+    
+    // Limpar o container
+    videoRef.current.innerHTML = ''
+    videoRef.current.appendChild(videoElement)
+
+    const videoType = getVideoType(correctedVideoUrl)
+    console.log('🎬 VideoJSPlayer: Tipo detectado:', videoType)
+
+    // Configurações do Video.js
+    const videoJsOptions = {
+      autoplay: autoPlay,
+      controls: controls,
+      responsive: responsive,
+      fluid: fluid,
+      aspectRatio: aspectRatio,
+      preload: preload,
+      poster: correctedPosterUrl,
+      sources: [{
+        src: correctedVideoUrl,
+        type: videoType
+      }],
+      controlBar: {
+        children: [
+          'playToggle',
+          'volumePanel',
+          'currentTimeDisplay',
+          'timeDivider',
+          'durationDisplay',
+          'progressControl',
+          'liveDisplay',
+          'remainingTimeDisplay',
+          'customControlSpacer',
+          'playbackRateMenuButton',
+          'fullscreenToggle'
+        ]
+      },
+      playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+      language: 'pt-BR',
+      languages: {
+        'pt-BR': {
+          'Play': 'Reproduzir',
+          'Pause': 'Pausar',
+          'Current Time': 'Tempo Atual',
+          'Duration': 'Duração',
+          'Remaining Time': 'Tempo Restante',
+          'Fullscreen': 'Tela Cheia',
+          'Non-Fullscreen': 'Sair da Tela Cheia',
+          'Mute': 'Silenciar',
+          'Unmute': 'Ativar Som',
+          'Playback Rate': 'Velocidade de Reprodução',
+          'Settings': 'Configurações'
+        }
+      },
+      html5: {
+        hls: {
+          enableLowInitialPlaylist: true,
+          smoothQualityChange: true,
+          overrideNative: true
+        },
+        nativeAudioTracks: false,
+        nativeVideoTracks: false,
+        nativeTextTracks: false
       }
     }
-  }, [isPlaying])
 
-  // Toggle mute
-  const toggleMute = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
-  }, [isMuted])
+    console.log('🎬 VideoJSPlayer: Configurações:', videoJsOptions)
 
-  // Toggle fullscreen
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
-    }
-  }, [])
-
-  // Skip forward/backward
-  const skip = useCallback((seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime += seconds
-    }
-  }, [])
-
-  // Handle volume change
-  const handleVolumeChange = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (volumeSliderRef.current && videoRef.current) {
-      const rect = volumeSliderRef.current.getBoundingClientRect()
-      const clickY = rect.bottom - e.clientY
-      const height = rect.height
-      const newVolume = Math.max(0, Math.min(1, clickY / height))
-      
-      setVolume(newVolume)
-      videoRef.current.volume = newVolume
-      setIsMuted(newVolume === 0)
-    }
-  }, [])
-
-  // Function to update video time based on click position
-  const updateVideoTime = useCallback((clientX: number) => {
-    if (progressRef.current && videoRef.current && duration > 0 && !isLoading) {
-      const rect = progressRef.current.getBoundingClientRect()
-      const clickX = Math.max(0, Math.min(clientX - rect.left, rect.width))
-      const newTime = (clickX / rect.width) * duration
-      
-      videoRef.current.currentTime = newTime
-    }
-  }, [duration, isLoading])
-
-  // Handle progress bar click
-  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Only handle click if not dragging and hasn't moved
-    if (!isDragging && !hasMoved) {
-      updateVideoTime(e.clientX)
-    }
-  }, [isDragging, hasMoved, updateVideoTime])
-
-  // Handle mouse drag events
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
-    isDraggingRef.current = true
-    setHasMoved(false)
-    // Immediately update time on mouse down
-    updateVideoTime(e.clientX)
-  }, [updateVideoTime])
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-    isDraggingRef.current = false
-    setHasMoved(false)
-  }, [])
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDraggingRef.current) {
-      setHasMoved(true)
-      updateVideoTime(e.clientX)
-    }
-  }, [updateVideoTime])
-
-  // Handle touch events for mobile
-  const handleTouchStart = useCallback(() => {
-    setIsDragging(true)
-    isDraggingRef.current = true
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    setIsDragging(false)
-    isDraggingRef.current = false
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (isDraggingRef.current) {
-      const touch = e.touches[0]
-      updateVideoTime(touch.clientX)
-    }
-  }, [updateVideoTime])
-
-  // Event handlers
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    const handleLoadStart = () => {
-      setIsLoading(true)
-    }
-
-    const handleLoadedMetadata = () => {
-      setDuration(video.duration)
+    // Inicializar o Video.js player
+    const player = videojs(videoElement, videoJsOptions, () => {
+      console.log('✅ VideoJSPlayer: Player inicializado com sucesso')
       setIsLoading(false)
       onLoad?.()
-    }
-
-    const handleTimeUpdate = () => {
-      if (video.duration > 0) {
-        setCurrentTime(video.currentTime)
+      
+      // Configurar eventos
+      player.on('error', async (error: any) => {
+        const currentError = player.error()
+        console.error('❌ VideoJSPlayer: Erro no player:', {
+          error,
+          currentError,
+          code: currentError?.code,
+          message: currentError?.message
+        })
         
-        // Update buffered progress
-        if (video.buffered.length > 0) {
-          const bufferedEnd = video.buffered.end(video.buffered.length - 1)
-          setBuffered((bufferedEnd / video.duration) * 100)
+        let errorMessage = 'Erro ao carregar o vídeo'
+        
+        if (currentError) {
+          switch (currentError.code) {
+            case 1:
+              errorMessage = 'Erro de rede ao carregar o vídeo'
+              break
+            case 2:
+              errorMessage = 'Erro ao decodificar o vídeo'
+              break
+            case 3:
+              errorMessage = 'Erro ao decodificar o vídeo'
+              break
+            case 4:
+              errorMessage = 'Formato de vídeo não suportado'
+              
+              // Se for uma URL de iframe, tentar diferentes formatos
+              if (videoUrl.includes('/embed/') && videoUrl.match(/\/embed\/\d+/)) {
+                console.log('🔄 VideoJSPlayer: Tentando diferentes formatos para iframe...')
+                const embedMatch = videoUrl.match(/\/embed\/(\d+)/)
+                if (embedMatch) {
+                  const videoId = embedMatch[1]
+                  console.log('🔄 VideoJSPlayer: ID extraído para fallback:', videoId)
+                  try {
+                    const newUrl = await tryDifferentFormats(videoId)
+                    console.log('🔄 VideoJSPlayer: Novo formato encontrado:', newUrl)
+                    if (newUrl !== correctedVideoUrl) {
+                      console.log('🔄 VideoJSPlayer: Aplicando novo formato:', newUrl)
+                      player.src({
+                        src: newUrl,
+                        type: getVideoType(newUrl)
+                      })
+                      return
+                    } else {
+                      console.log('⚠️ VideoJSPlayer: Mesmo formato, tentando mp4 como fallback')
+                      player.src({
+                        src: correctedVideoUrl,
+                        type: 'video/mp4'
+                      })
+                      return
+                    }
+                  } catch (error) {
+                    console.log('❌ VideoJSPlayer: Erro ao tentar diferentes formatos:', error)
+                    // Fallback para mp4
+                    player.src({
+                      src: correctedVideoUrl,
+                      type: 'video/mp4'
+                    })
+                    return
+                  }
+                } else {
+                  console.log('❌ VideoJSPlayer: Não foi possível extrair ID do iframe')
+                }
+              } else {
+                // Tentar com tipo diferente
+                console.log('🔄 VideoJSPlayer: Tentando com tipo diferente...')
+                player.src({
+                  src: correctedVideoUrl,
+                  type: 'video/mp4'
+                })
+                return
+              }
+              break
+            default:
+              errorMessage = currentError.message || 'Erro ao carregar o vídeo'
+          }
         }
+        
+        setError(errorMessage)
+        onError?.(errorMessage)
+      })
+
+      player.on('loadstart', () => {
+        console.log('🔄 VideoJSPlayer: Iniciando carregamento')
+        setIsLoading(true)
+        setError(null)
+      })
+
+      player.on('loadedmetadata', () => {
+        console.log('✅ VideoJSPlayer: Metadados carregados')
+        setIsLoading(false)
+      })
+
+      player.on('loadeddata', () => {
+        console.log('✅ VideoJSPlayer: Dados carregados')
+        setIsLoading(false)
+      })
+
+      player.on('canplay', () => {
+        console.log('✅ VideoJSPlayer: Vídeo pode ser reproduzido')
+        setIsLoading(false)
+      })
+
+      player.on('canplaythrough', () => {
+        console.log('✅ VideoJSPlayer: Vídeo pode ser reproduzido completamente')
+        setIsLoading(false)
+      })
+    })
+
+    playerRef.current = player
+
+    // Cleanup
+    return () => {
+      console.log('🧹 VideoJSPlayer: Limpando player')
+      if (playerRef.current) {
+        playerRef.current.dispose()
+        playerRef.current = null
       }
     }
+  }, [correctedVideoUrl, correctedPosterUrl, autoPlay, muted, loop, controls, preload, fluid, responsive, aspectRatio, onLoad, onError])
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
-    const handleEnded = () => setIsPlaying(false)
-    const handleSeeking = () => {
-      // Video is seeking to a new position
-    }
-    const handleSeeked = () => {
-      // Video finished seeking
-    }
-    const handleError = () => {
-      setError('Erro ao carregar o vídeo')
-      setIsLoading(false)
-      onError?.('Erro ao carregar o vídeo')
-    }
-
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-
-    video.addEventListener('loadstart', handleLoadStart)
-    video.addEventListener('loadedmetadata', handleLoadedMetadata)
-    video.addEventListener('timeupdate', handleTimeUpdate)
-    video.addEventListener('play', handlePlay)
-    video.addEventListener('pause', handlePause)
-    video.addEventListener('ended', handleEnded)
-    video.addEventListener('seeking', handleSeeking)
-    video.addEventListener('seeked', handleSeeked)
-    video.addEventListener('error', handleError)
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-
-    return () => {
-      video.removeEventListener('loadstart', handleLoadStart)
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
-      video.removeEventListener('timeupdate', handleTimeUpdate)
-      video.removeEventListener('play', handlePlay)
-      video.removeEventListener('pause', handlePause)
-      video.removeEventListener('ended', handleEnded)
-      video.removeEventListener('seeking', handleSeeking)
-      video.removeEventListener('seeked', handleSeeked)
-      video.removeEventListener('error', handleError)
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
-  }, [onLoad, onError])
-
-  // Global mouse up listener for drag
+  // Atualizar fonte do vídeo quando videoUrl mudar
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      setIsDragging(false)
-      isDraggingRef.current = false
-      setHasMoved(false)
+    if (playerRef.current && correctedVideoUrl) {
+      console.log('🔄 VideoJSPlayer: Atualizando fonte do vídeo:', correctedVideoUrl)
+      const videoType = getVideoType(correctedVideoUrl)
+      playerRef.current.src({
+        src: correctedVideoUrl,
+        type: videoType
+      })
     }
+  }, [correctedVideoUrl])
 
-    document.addEventListener('mouseup', handleGlobalMouseUp)
-    return () => document.removeEventListener('mouseup', handleGlobalMouseUp)
-  }, [])
-
-  // Auto-hide controls with better logic
+  // Atualizar poster quando mudar
   useEffect(() => {
-    let timeout: NodeJS.Timeout
-    
-    if (isPlaying && showControls && !isDragging) {
-      timeout = setTimeout(() => {
-        setShowControls(false)
-      }, 3000)
+    if (playerRef.current && correctedPosterUrl) {
+      console.log('🔄 VideoJSPlayer: Atualizando poster:', correctedPosterUrl)
+      playerRef.current.poster(correctedPosterUrl)
     }
+  }, [correctedPosterUrl])
 
-    return () => {
-      if (timeout) clearTimeout(timeout)
-    }
-  }, [isPlaying, showControls, isDragging])
-
-  // Mouse move handler for controls
-  const handleControlsMouseMove = useCallback(() => {
-    setShowControls(true)
-    if (isPlaying && !isDragging) {
-      setTimeout(() => setShowControls(false), 3000)
-    }
-  }, [isPlaying, isDragging])
-
-  // Keyboard shortcuts
+  // Atualizar autoplay quando mudar
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!containerRef.current?.contains(document.activeElement)) return
-
-      switch (e.key) {
-        case ' ':
-        case 'k':
-          e.preventDefault()
-          togglePlay()
-          break
-        case 'm':
-          e.preventDefault()
-          toggleMute()
-          break
-        case 'f':
-          e.preventDefault()
-          toggleFullscreen()
-          break
-        case 'ArrowLeft':
-          e.preventDefault()
-          skip(-10)
-          break
-        case 'ArrowRight':
-          e.preventDefault()
-          skip(10)
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          if (volume < 1) {
-            const newVolume = Math.min(1, volume + 0.1)
-            setVolume(newVolume)
-            if (videoRef.current) videoRef.current.volume = newVolume
-          }
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          if (volume > 0) {
-            const newVolume = Math.max(0, volume - 0.1)
-            setVolume(newVolume)
-            if (videoRef.current) videoRef.current.volume = newVolume
-          }
-          break
-      }
+    if (playerRef.current) {
+      playerRef.current.autoplay(autoPlay)
     }
+  }, [autoPlay])
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [togglePlay, toggleMute, toggleFullscreen, skip, volume])
+  // Atualizar muted quando mudar
+  useEffect(() => {
+    if (playerRef.current) {
+      playerRef.current.muted(muted)
+    }
+  }, [muted])
+
+  // Atualizar loop quando mudar
+  useEffect(() => {
+    if (playerRef.current) {
+      playerRef.current.loop(loop)
+    }
+  }, [loop])
 
   if (error) {
+    console.log('❌ VideoJSPlayer: Exibindo erro:', error)
     return (
       <div className="bg-black aspect-video rounded-lg flex items-center justify-center">
         <div className="text-white text-center">
           <div className="text-2xl mb-2">⚠️</div>
           <div className="text-sm">{error}</div>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              console.log('🔄 VideoJSPlayer: Tentando novamente')
+              setError(null)
+              setIsLoading(true)
+              if (playerRef.current) {
+                playerRef.current.load()
+              }
+            }}
             className="mt-4 bg-accent-red hover:bg-accent-red-hover text-white px-4 py-2 rounded-lg transition-colors"
           >
             Tentar Novamente
@@ -347,32 +520,10 @@ export default function Player({
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className="relative bg-black aspect-video rounded-lg overflow-hidden group"
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => isPlaying && !isDragging && setShowControls(false)}
-      onMouseMove={handleControlsMouseMove}
-    >
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        className="w-full h-full object-contain"
-        poster={poster}
-        autoPlay={autoPlay}
-        muted={muted}
-        loop={loop}
-        playsInline
-        preload="metadata"
-      >
-        <source src={videoUrl} type="video/mp4" />
-        <source src={videoUrl} type="application/x-mpegURL" />
-        Seu navegador não suporta reprodução de vídeo.
-      </video>
-
+    <div className="relative bg-black aspect-video rounded-lg overflow-hidden">
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
           <div className="text-white text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
             <div className="text-sm">Carregando vídeo...</div>
@@ -380,191 +531,21 @@ export default function Player({
         </div>
       )}
 
-      {/* Controls Overlay */}
+      {/* Video.js Container */}
       <div 
-        className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        {/* Top Controls */}
-        <div className="absolute top-0 left-0 right-0 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-white text-sm font-medium truncate flex-1 mr-4">
-              {title}
-            </h3>
-            <button
-              onClick={toggleFullscreen}
-              className="text-white hover:text-gray-300 transition-colors p-2 rounded-lg hover:bg-black/20"
-            >
-              {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
-            </button>
-          </div>
+        ref={videoRef} 
+        className="w-full h-full"
+        data-vjs-player
+      />
+
+      {/* Título do vídeo */}
+      {title && (
+        <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-5">
+          <h3 className="text-white text-sm font-medium truncate">
+            {title}
+          </h3>
         </div>
-
-        {/* Center Play Button - Only show when not playing or controls are visible */}
-        {(!isPlaying || showControls) && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <button
-              onClick={togglePlay}
-              className="bg-black/50 hover:bg-black/70 text-white rounded-full p-4 transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/50"
-              aria-label={isPlaying ? 'Pausar vídeo' : 'Reproduzir vídeo'}
-            >
-              {isPlaying ? <Pause size={32} /> : <Play size={32} />}
-            </button>
-          </div>
-        )}
-
-        {/* Bottom Controls */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          {/* Progress Bar */}
-          <div 
-            ref={progressRef}
-            className="relative h-2 bg-white/30 rounded-full mb-4 cursor-pointer group/progress"
-            onClick={handleProgressClick}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchMove}
-            onMouseLeave={() => {
-              setIsDragging(false)
-              isDraggingRef.current = false
-              setHasMoved(false)
-            }}
-          >
-            {/* Buffered Progress */}
-            <div 
-              className="absolute h-full bg-white/50 rounded-full"
-              style={{ width: `${buffered}%` }}
-            />
-            {/* Current Progress */}
-            <div 
-              className="absolute h-full bg-accent-red rounded-full"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
-            />
-            {/* Progress Handle */}
-            <div 
-              className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-accent-red rounded-full -ml-2 opacity-0 group-hover/progress:opacity-100 transition-opacity"
-              style={{ left: `${(currentTime / duration) * 100}%` }}
-            />
-          </div>
-
-          {/* Control Buttons */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Play/Pause */}
-              <button
-                onClick={togglePlay}
-                className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label={isPlaying ? 'Pausar vídeo' : 'Reproduzir vídeo'}
-              >
-                {isPlaying ? <Pause size={18} className="sm:w-5 sm:h-5" /> : <Play size={18} className="sm:w-5 sm:h-5" />}
-              </button>
-
-              {/* Skip Backward */}
-              <button
-                onClick={() => skip(-10)}
-                className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Retroceder 10 segundos"
-              >
-                <SkipBack size={18} className="sm:w-5 sm:h-5" />
-              </button>
-
-              {/* Skip Forward */}
-              <button
-                onClick={() => skip(10)}
-                className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Avançar 10 segundos"
-              >
-                <SkipForward size={18} className="sm:w-5 sm:h-5" />
-              </button>
-
-              {/* Volume Control */}
-              <div className="relative">
-                <button
-                  onClick={toggleMute}
-                  onMouseEnter={() => setShowVolumeSlider(true)}
-                  onMouseLeave={() => setShowVolumeSlider(false)}
-                  className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  aria-label={isMuted || volume === 0 ? 'Ativar som' : 'Silenciar'}
-                >
-                  {isMuted || volume === 0 ? <VolumeX size={18} className="sm:w-5 sm:h-5" /> : <Volume2 size={18} className="sm:w-5 sm:h-5" />}
-                </button>
-                
-                {/* Volume Slider */}
-                {showVolumeSlider && (
-                  <div 
-                    ref={volumeSliderRef}
-                    className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-black/90 rounded-lg p-3"
-                    onClick={handleVolumeChange}
-                  >
-                    <div className="w-3 h-20 bg-white/30 rounded-full relative">
-                      <div 
-                        className="absolute bottom-0 w-full bg-white rounded-full"
-                        style={{ height: `${volume * 100}%` }}
-                      />
-                      <div 
-                        className="absolute w-4 h-4 bg-white rounded-full -ml-2 transform -translate-y-1/2"
-                        style={{ bottom: `${volume * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Time Display */}
-              <div className="text-white text-sm font-medium hidden sm:block">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </div>
-              
-              {/* Mobile Time Display */}
-              <div className="text-white text-xs font-medium sm:hidden">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              {/* Quality Indicator */}
-              <div className="hidden sm:block">
-                <span className="text-white text-xs font-bold bg-accent-red px-2 py-1 rounded">
-                  HD
-                </span>
-              </div>
-              
-              {/* Mobile Quality Indicator */}
-              <div className="sm:hidden">
-                <span className="text-white text-xs font-bold bg-accent-red px-1 py-0.5 rounded">
-                  HD
-                </span>
-              </div>
-
-              {/* Settings */}
-              <button className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50">
-                <Settings size={18} className="sm:w-5 sm:h-5" />
-              </button>
-
-              {/* Fullscreen Button - Also in bottom controls */}
-              <button
-                onClick={toggleFullscreen}
-                className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
-              >
-                {isFullscreen ? <Minimize size={18} className="sm:w-5 sm:h-5" /> : <Maximize size={18} className="sm:w-5 sm:h-5" />}
-              </button>
-
-              {/* Reload */}
-              <button 
-                onClick={() => videoRef.current?.load()}
-                className="text-white hover:text-gray-300 transition-colors p-1 sm:p-2 rounded-lg hover:bg-black/20 focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label="Recarregar vídeo"
-              >
-                <RotateCcw size={18} className="sm:w-5 sm:h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

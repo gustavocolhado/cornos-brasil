@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { 
   ThumbsUp,
   Share2,
@@ -13,13 +14,16 @@ import {
   Eye,
   User,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Heart,
+  Bookmark
 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import Header from '@/components/Header'
 import Player from '@/components/Player'
 import VideoCard from '@/components/VideoCard'
 import { useRelatedVideos } from '@/hooks/useRelatedVideos'
+import { useVideoActions } from '@/hooks/useVideoActions'
 import AdIframe300x250 from '@/components/ads/300x250'
 import AdIframe728x90 from '@/components/ads/728x90'
 import AdIframe300x100 from '@/components/ads/300x100'
@@ -52,9 +56,12 @@ interface VideoData {
 export default function VideoPage() {
   const params = useParams()
   const videoUrl = params.url as string
+  const { data: session } = useSession()
   
   const [video, setVideo] = useState<VideoData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentLikesCount, setCurrentLikesCount] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   // Buscar vídeos relacionados
   const { videos: relatedVideos, loading: relatedLoading } = useRelatedVideos({
@@ -62,11 +69,17 @@ export default function VideoPage() {
     limit: 20
   })
 
+  // Hook para ações do vídeo
+  const { isLiked, isFavorited, isLoading: actionsLoading, toggleLike, toggleFavorite, recordView } = useVideoActions({
+    videoId: videoUrl
+  })
+
   // Buscar dados do vídeo
   useEffect(() => {
     const fetchVideo = async () => {
       try {
         setLoading(true)
+        setError(null)
         
         const response = await fetch(`/api/videos/${videoUrl}`)
         
@@ -76,8 +89,10 @@ export default function VideoPage() {
         
         const videoData = await response.json()
         setVideo(videoData)
+        setCurrentLikesCount(videoData.likesCount || 0)
       } catch (error) {
         console.error('Erro ao buscar vídeo:', error)
+        setError('Erro ao carregar vídeo')
         // Fallback para dados mock se a API falhar
         const mockVideo: VideoData = {
           id: videoUrl,
@@ -98,75 +113,62 @@ export default function VideoPage() {
             name: 'Cremona',
             username: 'cremona'
           },
-          uploadTime: '24 minutes ago',
-          description: 'Vídeo caseiro de boquete com magrinha sugando piroca dura do macho. Videos porno amador brasileiro.',
-          tags: ['boquete', 'magrinha', 'caseiro', 'amador', 'brasileiro']
+          uploadTime: '2024-01-15T10:30:00Z',
+          description: 'Descrição do vídeo...',
+          tags: ['BOQUETES', 'MAGRINHA', 'CASEIROS']
         }
         setVideo(mockVideo)
+        setCurrentLikesCount(mockVideo.likesCount)
       } finally {
         setLoading(false)
       }
     }
 
-    if (videoUrl) {
-      fetchVideo()
-    }
+    fetchVideo()
   }, [videoUrl])
 
-  // Atualizar título da página dinamicamente
-  useEffect(() => {
-    if (video) {
-      const title = `${video.title} - CORNOS BRASIL`
-      document.title = title
-      
-      // Atualizar meta description
-      const description = `${video.title}. Videos porno amador, videos de corno, porno brasileiro. Criado por ${video.creator}. Categorias: ${video.category.slice(0, 3).join(', ')}. Duração: ${video.duration}. Videos porno grátis no CORNOS BRASIL.`
-      
-      const metaDescription = document.querySelector('meta[name="description"]')
-      if (metaDescription) {
-        metaDescription.setAttribute('content', description)
-      } else {
-        const newMetaDescription = document.createElement('meta')
-        newMetaDescription.name = 'description'
-        newMetaDescription.content = description
-        document.head.appendChild(newMetaDescription)
-      }
-
-      // Atualizar Open Graph
-      const ogTitle = document.querySelector('meta[property="og:title"]')
-      if (ogTitle) {
-        ogTitle.setAttribute('content', title)
-      } else {
-        const newOgTitle = document.createElement('meta')
-        newOgTitle.setAttribute('property', 'og:title')
-        newOgTitle.content = title
-        document.head.appendChild(newOgTitle)
-      }
-
-      const ogDescription = document.querySelector('meta[property="og:description"]')
-      if (ogDescription) {
-        ogDescription.setAttribute('content', description)
-      } else {
-        const newOgDescription = document.createElement('meta')
-        newOgDescription.setAttribute('property', 'og:description')
-        newOgDescription.content = description
-        document.head.appendChild(newOgDescription)
-      }
-
-      // Atualizar canonical URL
-      const canonical = document.querySelector('link[rel="canonical"]')
-      if (canonical) {
-        canonical.setAttribute('href', `https://cornosbrasil.com/video/${video.url}`)
-      } else {
-        const newCanonical = document.createElement('link')
-        newCanonical.rel = 'canonical'
-        newCanonical.href = `https://cornosbrasil.com/video/${video.url}`
-        document.head.appendChild(newCanonical)
-      }
+  // Função para registrar visualização
+  const handleVideoLoad = useCallback(() => {
+    if (session?.user && video) {
+      recordView()
     }
-  }, [video])
+  }, [session, video, recordView])
 
-  // Função para construir a URL do thumbnail
+  // Função para lidar com like
+  const handleLike = async () => {
+    if (!session?.user) {
+      // Redirecionar para login ou mostrar modal
+      alert('Faça login para curtir vídeos')
+      return
+    }
+
+    try {
+      await toggleLike()
+      // Atualizar contador de likes
+      setCurrentLikesCount(prev => isLiked ? prev - 1 : prev + 1)
+    } catch (error) {
+      console.error('Erro ao curtir vídeo:', error)
+      alert('Erro ao curtir vídeo. Tente novamente.')
+    }
+  }
+
+  // Função para lidar com favoritos
+  const handleFavorite = async () => {
+    if (!session?.user) {
+      // Redirecionar para login ou mostrar modal
+      alert('Faça login para favoritar vídeos')
+      return
+    }
+
+    try {
+      await toggleFavorite()
+    } catch (error) {
+      console.error('Erro ao favoritar vídeo:', error)
+      alert('Erro ao favoritar vídeo. Tente novamente.')
+    }
+  }
+
+  // Função para obter URL da thumbnail
   const getThumbnailUrl = (url: string, isIframe: boolean) => {
     if (isIframe) {
       return url
@@ -180,12 +182,12 @@ export default function VideoPage() {
     
     // Remove barra dupla se existir
     const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
-    const cleanThumbnailUrl = url.startsWith('/') ? url : `/${url}`
+    const cleanVideoUrl = url.startsWith('/') ? url : `/${url}`
     
-    return `${cleanMediaUrl}${cleanThumbnailUrl}`
+    return `${cleanMediaUrl}${cleanVideoUrl}`
   }
 
-  // Função para construir a URL do vídeo
+  // Função para obter URL do vídeo
   const getVideoUrl = (url: string, isIframe: boolean) => {
     if (isIframe) {
       return url
@@ -252,12 +254,14 @@ export default function VideoPage() {
     )
   }
 
-  if (!video) {
+  if (error || !video) {
     return (
       <Layout>
         <Header />
         <div className="flex justify-center items-center min-h-screen">
-          <div className="text-theme-primary">Vídeo não encontrado</div>
+          <div className="text-theme-primary">
+            {error || 'Vídeo não encontrado'}
+          </div>
         </div>
       </Layout>
     )
@@ -314,7 +318,7 @@ export default function VideoPage() {
                 poster={getThumbnailUrl(video.thumbnailUrl, video.isIframe || false)}
                 title={video.title}
                 onError={(error) => console.error('Erro no player:', error)}
-                onLoad={() => console.log('Vídeo carregado com sucesso')}
+                onLoad={handleVideoLoad}
                 autoPlay={false}
                 muted={false}
                 loop={false}
@@ -331,13 +335,40 @@ export default function VideoPage() {
 
               {/* Engagement Buttons */}
               <div className="flex items-center space-x-4 mt-4">
-                <button className="flex items-center space-x-2 bg-theme-hover hover:bg-theme-input text-theme-primary px-4 py-2 rounded-lg transition-colors">
-                  <ThumbsUp className="w-4 h-4" />
-                  <span className="text-sm font-medium">100%</span>
-                  <span className="text-sm text-theme-muted">1 curtida</span>
+                <button 
+                  onClick={handleLike}
+                  disabled={actionsLoading}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    isLiked 
+                      ? 'bg-accent-red hover:bg-accent-red-hover text-white' 
+                      : 'bg-theme-hover hover:bg-theme-input text-theme-primary'
+                  }`}
+                >
+                  <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                  <span className="text-sm font-medium">
+                    {isLiked ? 'Curtido' : 'Curtir'}
+                  </span>
+                  <span className="text-sm opacity-75">
+                    {currentLikesCount.toLocaleString()}
+                  </span>
                 </button>
                 
-                <button className="flex items-center space-x-2 bg-accent-red hover:bg-accent-red-hover text-white px-4 py-2 rounded-lg transition-colors">
+                <button 
+                  onClick={handleFavorite}
+                  disabled={actionsLoading}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    isFavorited 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'bg-theme-hover hover:bg-theme-input text-theme-primary'
+                  }`}
+                >
+                  <Bookmark className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+                  <span className="text-sm font-medium">
+                    {isFavorited ? 'Favoritado' : 'Favoritar'}
+                  </span>
+                </button>
+
+                <button className="flex items-center space-x-2 bg-theme-hover hover:bg-theme-input text-theme-primary px-4 py-2 rounded-lg transition-colors">
                   <Info className="w-4 h-4" />
                   <span className="text-sm font-medium">INFO</span>
                 </button>
@@ -396,56 +427,34 @@ export default function VideoPage() {
                     <ThumbsUp className="w-5 h-5 text-theme-muted" />
                     <div>
                       <span className="text-sm text-theme-muted">Curtidas:</span>
-                      <span className="text-sm font-medium text-theme-primary ml-2">{video.likesCount.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-theme-primary ml-2">{currentLikesCount.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-4">
-                  <span className="text-sm text-theme-muted">Categorias:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {video.category.map((cat, index) => (
-                      <span
-                        key={index}
-                        className="bg-theme-hover text-theme-primary px-3 py-1 rounded-full text-sm"
-                      >
-                        {cat}
-                      </span>
-                    ))}
-                  </div>
-                </div>
               </div>
+            </div>
 
-              {/* Banner Mobile - Abaixo das Informações do Vídeo */}
-              <div className="lg:hidden mt-4">
+            {/* Sidebar */}
+            <div className="lg:w-80 space-y-4">
+              {/* Banner Mobile - Sidebar */}
+              <div className="lg:hidden">
                 <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                  <div className="w-full h-[100px] bg-theme-input rounded-lg flex items-center justify-center">
-                    <AdIframe300x100 />
+                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                    <AdIframe300x250 />
                   </div>
                 </div>
               </div>
 
-              {/* Vídeos Relacionados - Agora abaixo das informações */}
-              <div className="mt-6">
-                <h3 className="text-xl font-bold text-theme-primary mb-4">
-                  Vídeos Relacionados
-                  {video.category.length > 0 && (
-                    <span className="text-sm font-normal text-theme-muted ml-2">
-                      (baseado em: {video.category.slice(0, 2).join(', ')})
-                    </span>
-                  )}
-                </h3>
-                
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {/* Vídeos Relacionados */}
+              <div className="bg-theme-card border border-theme-primary rounded-lg p-4">
+                <h3 className="text-lg font-bold text-theme-primary mb-4">Vídeos Relacionados</h3>
+                <div className="space-y-4">
                   {relatedLoading ? (
-                    <div className="col-span-full text-center py-8">
-                      <div className="text-theme-muted flex items-center justify-center space-x-2">
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Carregando vídeos relacionados...</span>
-                      </div>
+                    <div className="flex justify-center py-4">
+                      <RefreshCw className="w-5 h-5 animate-spin text-theme-primary" />
                     </div>
-                  ) : (
-                    relatedVideos.map((relatedVideo) => (
+                  ) : relatedVideos.length > 0 ? (
+                    relatedVideos.slice(0, 5).map((relatedVideo) => (
                       <VideoCard
                         key={relatedVideo.id}
                         id={relatedVideo.id}
@@ -457,45 +466,16 @@ export default function VideoPage() {
                         premium={relatedVideo.premium || false}
                         viewCount={relatedVideo.viewCount}
                         likesCount={0}
-                        category={relatedVideo.category || []}
+                        category={relatedVideo.category}
                         creator={relatedVideo.creator}
                         uploader={null}
                       />
                     ))
+                  ) : (
+                    <p className="text-theme-muted text-sm">Nenhum vídeo relacionado encontrado</p>
                   )}
                 </div>
-                
-                {!relatedLoading && relatedVideos.length === 0 && (
-                  <div className="text-center py-8">
-                    <div className="text-theme-muted">Nenhum vídeo relacionado encontrado</div>
-                  </div>
-                )}
               </div>
-            </div>
-
-            {/* Right Sidebar - Apenas Banners de Anúncios no Desktop */}
-            <div className="hidden lg:block lg:w-80">
-              {/* Banner de Anúncio 1 */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mb-4 mt-4">
-                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                <AdIframe300x250 />
-                </div>
-              </div>
-
-              {/* Banner de Anúncio 2 */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mb-4">
-                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                <AdIframe300x250 />
-                </div>
-              </div>
-
-              {/* Banner de Anúncio 3 */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-4">
-                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                <AdIframe300x250 />
-                </div>
-              </div>
-
             </div>
           </div>
         </div>

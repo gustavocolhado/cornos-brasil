@@ -133,3 +133,137 @@ npm run start
 ## Licença
 
 Este projeto é apenas para fins educacionais e de demonstração. 
+
+# CORNOS BRASIL - Video Player com Video.js
+
+Este projeto utiliza o Video.js para reprodução de vídeos, oferecendo uma experiência moderna e responsiva.
+
+## Player com Video.js
+
+O componente `Player` foi atualizado para usar o Video.js, oferecendo:
+
+### Funcionalidades
+
+- ✅ Reprodução de vídeos MP4 e HLS (.m3u8)
+- ✅ Controles personalizados em português
+- ✅ Suporte a diferentes velocidades de reprodução (0.5x - 2x)
+- ✅ Controle de volume
+- ✅ Tela cheia
+- ✅ Progress bar interativa
+- ✅ Loading overlay
+- ✅ Tratamento de erros
+- ✅ Responsivo para mobile e desktop
+- ✅ Suporte a poster/thumbnail
+- ✅ Autoplay configurável
+- ✅ Loop configurável
+- ✅ Mute configurável
+
+### Uso
+
+```tsx
+import Player from '@/components/Player'
+
+// Uso básico
+<Player 
+  videoUrl="https://example.com/video.mp4"
+  poster="https://example.com/thumbnail.jpg"
+  title="Título do Vídeo"
+/>
+
+// Uso avançado
+<Player 
+  videoUrl="https://example.com/video.m3u8"
+  poster="https://example.com/thumbnail.jpg"
+  title="Título do Vídeo"
+  autoPlay={false}
+  muted={false}
+  loop={false}
+  controls={true}
+  preload="metadata"
+  fluid={true}
+  responsive={true}
+  aspectRatio="16:9"
+  onError={(error) => console.error('Erro:', error)}
+  onLoad={() => console.log('Vídeo carregado')}
+/>
+```
+
+### Props
+
+| Prop | Tipo | Padrão | Descrição |
+|------|------|--------|-----------|
+| `videoUrl` | `string` | - | URL do vídeo (obrigatório) |
+| `poster` | `string` | - | URL da thumbnail/poster |
+| `title` | `string` | - | Título do vídeo |
+| `autoPlay` | `boolean` | `false` | Reproduzir automaticamente |
+| `muted` | `boolean` | `false` | Iniciar mutado |
+| `loop` | `boolean` | `false` | Repetir vídeo |
+| `controls` | `boolean` | `true` | Mostrar controles |
+| `preload` | `'auto' \| 'metadata' \| 'none'` | `'metadata'` | Estratégia de pré-carregamento |
+| `fluid` | `boolean` | `true` | Layout fluido |
+| `responsive` | `boolean` | `true` | Responsivo |
+| `aspectRatio` | `string` | `'16:9'` | Proporção do vídeo |
+| `onError` | `(error: string) => void` | - | Callback de erro |
+| `onLoad` | `() => void` | - | Callback de carregamento |
+
+### Estilos Personalizados
+
+O Video.js vem com estilos personalizados que incluem:
+
+- Botão de play centralizado com animação
+- Controles com gradiente transparente
+- Progress bar com cor personalizada (#dc2626)
+- Volume slider vertical
+- Responsividade para mobile
+- Compatibilidade com tema escuro
+
+### Suporte a Formatos
+
+- **MP4**: Suporte nativo
+- **HLS (.m3u8)**: Suporte via Video.js HLS plugin
+- **Outros formatos**: Dependem do suporte do navegador
+
+### Configuração
+
+O Video.js está configurado com:
+
+- Idioma: Português (pt-BR)
+- Velocidades: 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
+- Controles: Play/Pause, Volume, Tempo, Progresso, Velocidade, Tela Cheia
+- Layout: Fluido e responsivo
+
+### Troubleshooting
+
+Se o vídeo não carregar:
+
+1. Verifique se a URL do vídeo está correta
+2. Verifique se o formato é suportado
+3. Verifique se há problemas de CORS
+4. Verifique o console do navegador para erros
+
+### Exemplo de Implementação
+
+```tsx
+// app/video/[url]/page.tsx
+import Player from '@/components/Player'
+
+export default function VideoPage() {
+  return (
+    <div className="container mx-auto p-4">
+      <Player 
+        videoUrl={video.videoUrl}
+        poster={video.thumbnailUrl}
+        title={video.title}
+        onError={(error) => {
+          console.error('Erro no player:', error)
+          // Mostrar mensagem de erro para o usuário
+        }}
+        onLoad={() => {
+          console.log('Vídeo carregado com sucesso')
+          // Atualizar estatísticas de visualização
+        }}
+      />
+    </div>
+  )
+}
+``` 

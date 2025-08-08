@@ -10,6 +10,7 @@ declare module 'next-auth' {
       username?: string | null
       premium: boolean
       expireDate?: Date | null
+      access: number
     }
   }
 
@@ -21,6 +22,7 @@ declare module 'next-auth' {
     username?: string | null
     premium: boolean
     expireDate?: Date | null
+    access: number
   }
 }
 
@@ -33,5 +35,6 @@ declare module 'next-auth/jwt' {
     expireDate?: Date | null
     email?: string | null
     accessToken?: string
+    access: number
   }
 } 

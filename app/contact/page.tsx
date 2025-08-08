@@ -73,7 +73,7 @@ export default function ContactPage() {
 
   const handleTelegramClick = () => {
     // Substitua pelo seu username do Telegram
-    const telegramUsername = 'cornosbrasil'
+    const telegramUsername = 'SuporteAssinante'
     const message = encodeURIComponent('Olá! Preciso de ajuda com o CORNOS BRASIL.')
     window.open(`https://t.me/${telegramUsername}?text=${message}`, '_blank')
   }
@@ -252,7 +252,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-theme-primary">Telegram</h4>
-                        <p className="text-theme-secondary">@cornosbrasil</p>
+                        <p className="text-theme-secondary">@SuporteAssinante</p>
                         <p className="text-sm text-theme-secondary">Resposta em até 5 min</p>
                       </div>
                     </div>
