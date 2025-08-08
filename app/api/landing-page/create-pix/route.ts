@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
+import QRCode from 'qrcode'
 
 const mercadopago = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
@@ -103,6 +104,15 @@ export async function POST(request: NextRequest) {
     const paymentClient = new Payment(mercadopago)
     const response = await paymentClient.create({ body: payment })
 
+    console.log('🔍 Resposta completa do MercadoPago:', {
+      id: response.id,
+      status: response.status,
+      point_of_interaction: response.point_of_interaction ? 'Presente' : 'Ausente',
+      transaction_data: response.point_of_interaction?.transaction_data ? 'Presente' : 'Ausente',
+      qr_code: response.point_of_interaction?.transaction_data?.qr_code ? 'Presente' : 'Ausente',
+      qr_code_base64: response.point_of_interaction?.transaction_data?.qr_code_base64 ? 'Presente' : 'Ausente'
+    })
+
     if (!response.point_of_interaction?.transaction_data?.qr_code) {
       throw new Error('QR Code PIX não gerado')
     }
@@ -114,10 +124,35 @@ export async function POST(request: NextRequest) {
       qr_code_base64_length: response.point_of_interaction.transaction_data.qr_code_base64?.length || 0
     })
 
+    // Verificar se o QR code base64 está presente
+    let qrCodeBase64: string | null = response.point_of_interaction.transaction_data.qr_code_base64 || null
+    if (!qrCodeBase64 && response.point_of_interaction.transaction_data.qr_code) {
+      console.log('⚠️ QR code base64 não retornado pelo MercadoPago, será gerado localmente')
+      // Se não tiver o QR code base64, vamos gerar localmente
+      try {
+        const qrCodeDataURL = await QRCode.toDataURL(response.point_of_interaction.transaction_data.qr_code, {
+          width: 192,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        })
+        // Remover o prefixo data:image/png;base64, para manter consistência
+        qrCodeBase64 = qrCodeDataURL.replace('data:image/png;base64,', '')
+        console.log('✅ QR code base64 gerado localmente, tamanho:', qrCodeBase64.length)
+      } catch (error) {
+        console.error('❌ Erro ao gerar QR code base64 localmente:', error)
+        qrCodeBase64 = null
+      }
+    } else if (qrCodeBase64) {
+      console.log('✅ QR code base64 retornado pelo MercadoPago, tamanho:', qrCodeBase64.length)
+    }
+
     const pixData = {
       id: response.id,
       qr_code: response.point_of_interaction.transaction_data.qr_code,
-      qr_code_base64: response.point_of_interaction.transaction_data.qr_code_base64 || null,
+      qr_code_base64: qrCodeBase64,
       status: response.status,
       value: value,
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos

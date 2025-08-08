@@ -25,7 +25,7 @@ interface PixResponse {
   qr_code: string;
   status: string;
   value: number;
-  qr_code_base64: string;
+  qr_code_base64: string | null;
 }
 
 export default function LandingPage() {
@@ -264,9 +264,21 @@ export default function LandingPage() {
   // Gerar QR Code quando pixData for atualizado
   useEffect(() => {
     if (pixData && !pixData.qr_code_base64 && pixData.qr_code) {
+      console.log('🔍 Gerando QR code localmente para:', pixData.qr_code.substring(0, 50) + '...')
       generateQRCode(pixData.qr_code);
+    } else if (pixData && pixData.qr_code_base64) {
+      console.log('✅ QR code base64 já disponível, tamanho:', pixData.qr_code_base64.length)
     }
   }, [pixData]);
+
+  // Log quando QR code for exibido
+  useEffect(() => {
+    if (pixData?.qr_code_base64) {
+      console.log('🎯 QR code base64 disponível para exibição, tamanho:', pixData.qr_code_base64.length)
+    } else if (generatedQRCode) {
+      console.log('🎯 QR code gerado localmente disponível para exibição')
+    }
+  }, [pixData?.qr_code_base64, generatedQRCode]);
 
   // Função para verificar status do pagamento manualmente
   const checkPaymentStatus = async () => {
@@ -489,6 +501,7 @@ export default function LandingPage() {
   // Função para gerar QR Code quando base64 não estiver disponível
   const generateQRCode = async (qrCodeText: string) => {
     try {
+      console.log('🎨 Gerando QR code para:', qrCodeText.substring(0, 50) + '...')
       const qrCodeDataURL = await QRCode.toDataURL(qrCodeText, {
         width: 192,
         margin: 2,
@@ -497,9 +510,10 @@ export default function LandingPage() {
           light: '#FFFFFF'
         }
       });
+      console.log('✅ QR code gerado com sucesso, tamanho:', qrCodeDataURL.length)
       setGeneratedQRCode(qrCodeDataURL);
     } catch (error) {
-      console.error('Erro ao gerar QR Code:', error);
+      console.error('❌ Erro ao gerar QR Code:', error);
     }
   };
 
@@ -1161,17 +1175,27 @@ export default function LandingPage() {
                   {/* QR Code */}
                   <div className="flex justify-center mb-6">
                     <div className="bg-white p-4 rounded-lg">
-                      {pixData.qr_code_base64 ? (
+                      {pixData?.qr_code_base64 ? (
                         <img 
-                          src={pixData.qr_code_base64} 
+                          src={`data:image/png;base64,${pixData.qr_code_base64}`}
                           alt="QR Code PIX" 
                           className="w-48 h-48"
+                          onError={(e) => {
+                            console.error('❌ Erro ao carregar QR code base64:', e)
+                            // Se falhar, tentar gerar localmente
+                            if (pixData.qr_code) {
+                              generateQRCode(pixData.qr_code)
+                            }
+                          }}
+                          onLoad={() => console.log('✅ QR code base64 carregado com sucesso')}
                         />
                       ) : generatedQRCode ? (
                         <img 
                           src={generatedQRCode} 
                           alt="QR Code PIX Gerado" 
                           className="w-48 h-48"
+                          onError={(e) => console.error('❌ Erro ao carregar QR code gerado:', e)}
+                          onLoad={() => console.log('✅ QR code gerado carregado com sucesso')}
                         />
                       ) : (
                         <div className="w-48 h-48 flex items-center justify-center bg-gray-100 rounded">
