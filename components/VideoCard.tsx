@@ -62,6 +62,11 @@ export default function VideoCard({
       return url
     }
     
+    // Se a URL já é completa (começa com http), retornar como está
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+    
     // Remove barra dupla se existir
     const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
     const cleanThumbnailUrl = url.startsWith('/') ? url : `/${url}`

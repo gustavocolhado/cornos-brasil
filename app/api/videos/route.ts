@@ -3,6 +3,38 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth.config'
 import { prisma } from '@/lib/prisma'
 
+// Função para construir URLs completas
+function buildMediaUrl(url: string | null): string | null {
+  if (!url) return null
+  
+  // Se já é uma URL completa, retornar como está
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  
+  const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
+  if (!mediaUrl) {
+    console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
+    return url
+  }
+  
+  // Remove barra dupla se existir
+  const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`
+  
+  return `${cleanMediaUrl}${cleanUrl}`
+}
+
+// Função para processar vídeos e construir URLs
+function processVideos(videos: any[]) {
+  return videos.map(video => ({
+    ...video,
+    thumbnailUrl: buildMediaUrl(video.thumbnailUrl),
+    videoUrl: buildMediaUrl(video.videoUrl),
+    trailerUrl: buildMediaUrl(video.trailerUrl)
+  }))
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -227,7 +259,7 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        videos = mixedVideos.slice(0, limit)
+        videos = processVideos(mixedVideos.slice(0, limit))
         totalVideos = allFreeVideos.length
       } else {
         // Busca normal com paginação para usuários não premium
@@ -298,7 +330,7 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        videos = mixedVideos.slice(0, limit)
+        videos = processVideos(mixedVideos.slice(0, limit))
         
         // Contar total de vídeos gratuitos para paginação
         totalVideos = await prisma.video.count({

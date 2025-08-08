@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Função para construir URLs completas
+function buildMediaUrl(url: string | null): string | null {
+  if (!url) return null
+  
+  // Se já é uma URL completa, retornar como está
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  
+  const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
+  if (!mediaUrl) {
+    console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
+    return url
+  }
+  
+  // Remove barra dupla se existir
+  const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`
+  
+  return `${cleanMediaUrl}${cleanUrl}`
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -32,9 +54,9 @@ export async function GET(
       url: video.url,
       title: video.title,
       duration: video.duration ? `${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}` : '0:00',
-      thumbnailUrl: video.thumbnailUrl,
-      videoUrl: video.videoUrl,
-      trailerUrl: video.trailerUrl,
+      thumbnailUrl: buildMediaUrl(video.thumbnailUrl),
+      videoUrl: buildMediaUrl(video.videoUrl),
+      trailerUrl: buildMediaUrl(video.trailerUrl),
       isIframe: video.iframe,
       premium: video.premium,
       viewCount: video.viewCount,
