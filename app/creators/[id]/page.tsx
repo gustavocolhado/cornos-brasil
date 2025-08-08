@@ -17,7 +17,7 @@ interface Video {
   url: string
   videoUrl: string
   viewCount: number
-  likesCount: number
+
   thumbnailUrl: string
   duration: number | null
   premium: boolean
@@ -245,7 +245,7 @@ export default function CreatorPage() {
                      isIframe={video.iframe}
                      premium={video.premium}
                      viewCount={video.viewCount}
-                     likesCount={video.likesCount}
+
                      category={video.category}
                      creator={video.creator || undefined}
                   />

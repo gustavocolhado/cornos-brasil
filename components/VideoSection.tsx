@@ -115,7 +115,7 @@ export default function VideoSection() {
             isIframe={video.iframe}
             premium={video.premium}
             viewCount={video.viewCount}
-            likesCount={video.likesCount}
+
             category={video.category}
             creator={video.creator || undefined}
             onClick={handleVideoClick}

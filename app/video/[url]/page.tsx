@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { 
   ThumbsUp,
@@ -55,6 +55,7 @@ interface VideoData {
 
 export default function VideoPage() {
   const params = useParams()
+  const router = useRouter()
   const videoUrl = params.url as string
   const { data: session } = useSession()
   
@@ -74,6 +75,15 @@ export default function VideoPage() {
     videoId: videoUrl
   })
 
+  // Verificar se o vídeo é premium e o usuário não é premium
+  useEffect(() => {
+    if (video && video.premium && !session?.user?.premium) {
+      console.log('🔒 Vídeo premium detectado, usuário não premium, redirecionando...')
+      router.push('/premium')
+      return
+    }
+  }, [video, session?.user?.premium, router])
+
   // Buscar dados do vídeo
   useEffect(() => {
     const fetchVideo = async () => {
@@ -90,6 +100,13 @@ export default function VideoPage() {
         const videoData = await response.json()
         setVideo(videoData)
         setCurrentLikesCount(videoData.likesCount || 0)
+        
+        // Verificar se o vídeo é premium e o usuário não é premium
+        if (videoData.premium && !session?.user?.premium) {
+          console.log('🔒 Vídeo premium detectado, usuário não premium, redirecionando...')
+          router.push('/premium')
+          return
+        }
       } catch (error) {
         console.error('Erro ao buscar vídeo:', error)
         setError('Erro ao carregar vídeo')
@@ -462,7 +479,7 @@ export default function VideoPage() {
                         isIframe={relatedVideo.iframe || false}
                         premium={relatedVideo.premium || false}
                         viewCount={relatedVideo.viewCount}
-                        likesCount={0}
+
                         category={relatedVideo.category}
                         creator={relatedVideo.creator}
                         uploader={null}

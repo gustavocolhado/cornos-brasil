@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Heart, Star, Lock } from 'lucide-react'
-import { useVideoActions } from '@/hooks/useVideoActions'
-import { usePremiumStatus } from '@/hooks/usePremiumStatus'
+import { Lock } from 'lucide-react'
 
 interface VideoCardProps {
   id: string
@@ -17,7 +15,6 @@ interface VideoCardProps {
   isIframe?: boolean
   premium?: boolean
   viewCount?: number
-  likesCount?: number
   category?: string[]
   creator?: string
   uploader?: {
@@ -38,7 +35,6 @@ export default function VideoCard({
   isIframe = false,
   premium = false, 
   viewCount = 0, 
-  likesCount = 0, 
   category = [], 
   creator, 
   uploader, 
@@ -47,8 +43,6 @@ export default function VideoCard({
   const [showTrailer, setShowTrailer] = useState(false)
   const router = useRouter()
   const { data: session } = useSession()
-  const { isLiked, isFavorited, isLoading, toggleLike, toggleFavorite } = useVideoActions({ videoId: id })
-  const { isPremium: isUserPremium, loading: premiumLoading } = usePremiumStatus()
   
   // Função para construir a URL do thumbnail
   const getThumbnailUrl = (url: string, isIframe: boolean) => {
@@ -76,28 +70,20 @@ export default function VideoCard({
   
   const handleClick = () => {
     // Se o vídeo é premium e o usuário não é premium, redirecionar para a página premium
-    if (premium && !isUserPremium) {
+    if (premium && !session?.user?.premium) {
       router.push('/premium')
       return
     }
     
     if (onClick) {
-      onClick({ id, title, duration, thumbnailUrl, videoUrl, trailerUrl, isIframe, premium, viewCount, likesCount, category, creator, uploader })
+      onClick({ id, title, duration, thumbnailUrl, videoUrl, trailerUrl, isIframe, premium, viewCount, category, creator, uploader })
     } else {
       // Navegar para a página do vídeo
       router.push(`/video/${id}`)
     }
   }
 
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    toggleLike()
-  }
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    toggleFavorite()
-  }
 
   const handleMouseEnter = () => {
     if (isIframe && trailerUrl) {
@@ -123,11 +109,6 @@ export default function VideoCard({
         "@type": "InteractionCounter",
         "interactionType": "https://schema.org/WatchAction",
         "userInteractionCount": viewCount
-      },
-      {
-        "@type": "InteractionCounter", 
-        "interactionType": "https://schema.org/LikeAction",
-        "userInteractionCount": likesCount
       }
     ],
     "creator": creator || uploader?.name,
@@ -221,7 +202,7 @@ export default function VideoCard({
         )}
         
         {/* Premium Overlay - Vídeo borrado com cadeado */}
-        {premium && !isUserPremium && !premiumLoading && (
+        {premium && !session?.user?.premium && (
           <div 
             className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-20"
             aria-label="Conteúdo Premium - Faça upgrade para desbloquear"
@@ -269,36 +250,7 @@ export default function VideoCard({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        {(!premium || isUserPremium || premiumLoading) && (
-          <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={handleLikeClick}
-              disabled={isLoading}
-              aria-label={isLiked ? 'Descurtir vídeo' : 'Curtir vídeo'}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
-                isLiked 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-black bg-opacity-75 text-white hover:bg-red-500'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} aria-hidden="true" />
-            </button>
-            
-            <button
-              onClick={handleFavoriteClick}
-              disabled={isLoading}
-              aria-label={isFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
-                isFavorited 
-                  ? 'bg-yellow-500 text-white' 
-                  : 'bg-black bg-opacity-75 text-white hover:bg-yellow-500'
-              }`}
-            >
-              <Star className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+
       </div>
       
       {/* Title */}
@@ -307,7 +259,7 @@ export default function VideoCard({
         itemProp="name"
       >
         {title}
-        {premium && !isUserPremium && !premiumLoading && (
+        {premium && !session?.user?.premium && (
           <span className="inline-flex items-center ml-2 text-yellow-500">
             <Lock className="w-3 h-3 mr-1" aria-hidden="true" />
             Premium
@@ -333,14 +285,6 @@ export default function VideoCard({
             aria-label={`${viewCount.toLocaleString()} visualizações`}
           >
             {viewCount.toLocaleString()} views
-          </span>
-        )}
-        {likesCount > 0 && (
-          <span 
-            className="text-xs text-theme-secondary"
-            aria-label={`${likesCount.toLocaleString()} curtidas`}
-          >
-            {likesCount.toLocaleString()} likes
           </span>
         )}
       </div>

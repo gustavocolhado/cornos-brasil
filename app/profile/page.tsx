@@ -48,7 +48,7 @@ interface Video {
   videoUrl: string
   thumbnailUrl: string
   viewCount: number
-  likesCount: number
+
   duration: number
   premium: boolean
   creator: string
@@ -491,7 +491,6 @@ function ProfileContent() {
                       isIframe={video.iframe}
                       premium={video.premium}
                       viewCount={video.viewCount}
-                      likesCount={video.likesCount}
                       category={video.category}
                       creator={video.creator || undefined}
                     />
@@ -533,7 +532,6 @@ function ProfileContent() {
                       isIframe={video.iframe}
                       premium={video.premium}
                       viewCount={video.viewCount}
-                      likesCount={video.likesCount}
                       category={video.category}
                       creator={video.creator || undefined}
                     />
@@ -575,7 +573,6 @@ function ProfileContent() {
                       isIframe={video.iframe}
                       premium={video.premium}
                       viewCount={video.viewCount}
-                      likesCount={video.likesCount}
                       category={video.category}
                       creator={video.creator || undefined}
                     />

@@ -1,6 +1,28 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Função para construir URLs completas
+function buildMediaUrl(url: string | null): string | null {
+  if (!url) return null
+  
+  // Se já é uma URL completa, retornar como está
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  
+  const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
+  if (!mediaUrl) {
+    console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
+    return url
+  }
+  
+  // Remove barra dupla se existir
+  const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`
+  
+  return `${cleanMediaUrl}${cleanUrl}`
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -61,8 +83,16 @@ export async function GET(
       }
     })
 
+    // Processar vídeos para construir URLs completas
+    const processedVideos = videos.map(video => ({
+      ...video,
+      thumbnailUrl: buildMediaUrl(video.thumbnailUrl),
+      videoUrl: buildMediaUrl(video.videoUrl),
+      trailerUrl: buildMediaUrl(video.trailerUrl)
+    }))
+
     return NextResponse.json({
-      videos,
+      videos: processedVideos,
       pagination: {
         page,
         limit,

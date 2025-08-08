@@ -10,7 +10,7 @@ import PremiumTeaser from '@/components/PremiumTeaser'
 import SEOHead from '@/components/SEOHead'
 import { Search, Play, TrendingUp, Heart, Clock, Shuffle, Filter } from 'lucide-react'
 import { useVideos } from '@/hooks/useVideos'
-import { usePremiumStatus } from '@/hooks/usePremiumStatus'
+import { useSession } from 'next-auth/react'
 import { formatDuration } from '@/utils/formatDuration'
 
 type FilterType = 'recent' | 'popular' | 'liked' | 'long' | 'random'
@@ -67,7 +67,7 @@ export default function VideosPage() {
     page: currentPage
   })
   
-  const { isPremium, loading: premiumLoading } = usePremiumStatus()
+  const { data: session } = useSession()
 
   const filteredVideos = useMemo(() => videos, [videos])
 
@@ -370,24 +370,23 @@ export default function VideosPage() {
                 <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8 ${pageLoading ? 'opacity-50' : ''}`}>
                   {filteredVideos.map((video, index) => (
                     <div key={video.id}>
-                      <VideoCard
-                        id={video.id}
-                        title={video.title}
-                        duration={formatDuration(video.duration)}
-                        thumbnailUrl={video.thumbnailUrl}
-                        videoUrl={video.videoUrl}
-                        trailerUrl={video.trailerUrl || undefined}
-                        isIframe={video.iframe}
-                        premium={video.premium}
-                        viewCount={video.viewCount}
-                        likesCount={video.likesCount}
-                        category={video.category}
-                        creator={video.creator || undefined}
-                        onClick={handleVideoClick}
-                      />
+                                             <VideoCard
+                         id={video.id}
+                         title={video.title}
+                         duration={formatDuration(video.duration)}
+                         thumbnailUrl={video.thumbnailUrl}
+                         videoUrl={video.videoUrl}
+                         trailerUrl={video.trailerUrl || undefined}
+                         isIframe={video.iframe}
+                         premium={video.premium}
+                         viewCount={video.viewCount}
+                         category={video.category}
+                         creator={video.creator || undefined}
+                         onClick={handleVideoClick}
+                       />
                       
                       {/* Mostrar PremiumTeaser a cada 8 vídeos para usuários não premium */}
-                      {!isPremium && !premiumLoading && (index + 1) % 8 === 0 && (
+                      {!session?.user?.premium && (index + 1) % 8 === 0 && (
                         <div className="col-span-full mt-6">
                           <PremiumTeaser />
                         </div>
