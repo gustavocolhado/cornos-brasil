@@ -261,6 +261,42 @@ export default function LandingPage() {
     }
   }, [showPixPayment, timeLeft]);
 
+  // Polling automático para verificar status do pagamento
+  useEffect(() => {
+    if (showPixPayment && pixData && !paymentConfirmed) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/landing-page/check-payment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              pixId: pixData.id
+            }),
+          });
+
+          if (response.ok) {
+            const statusData = await response.json();
+            if (statusData.paid && !paymentConfirmed) {
+              console.log('✅ Pagamento confirmado automaticamente!');
+              // Pagamento confirmado! Mostrar formulário de senha
+              setPaymentConfirmed(true);
+              setShowPixPayment(false);
+              setShowPasswordForm(true);
+              clearInterval(pollInterval);
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao verificar status automaticamente:', error);
+        }
+      }, 5000); // Verificar a cada 5 segundos
+
+      // Limpar o intervalo quando o componente for desmontado ou quando o pagamento for confirmado
+      return () => clearInterval(pollInterval);
+    }
+  }, [showPixPayment, pixData, paymentConfirmed]);
+
   // Gerar QR Code quando pixData for atualizado
   useEffect(() => {
     if (pixData && !pixData.qr_code_base64 && pixData.qr_code) {
