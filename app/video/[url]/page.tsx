@@ -77,12 +77,18 @@ export default function VideoPage() {
 
   // Verificar se o vídeo é premium e o usuário não é premium
   useEffect(() => {
+    // Aguardar o carregamento da sessão antes de verificar
+    if (session === undefined) {
+      console.log('⏳ Aguardando carregamento da sessão...')
+      return
+    }
+    
     if (video && video.premium && !session?.user?.premium) {
       console.log('🔒 Vídeo premium detectado, usuário não premium, redirecionando...')
       router.push('/premium')
       return
     }
-  }, [video, session?.user?.premium, router])
+  }, [video, session, router])
 
   // Buscar dados do vídeo
   useEffect(() => {
@@ -102,7 +108,8 @@ export default function VideoPage() {
         setCurrentLikesCount(videoData.likesCount || 0)
         
         // Verificar se o vídeo é premium e o usuário não é premium
-        if (videoData.premium && !session?.user?.premium) {
+        // Aguardar o carregamento da sessão antes de verificar
+        if (videoData.premium && session !== undefined && !session?.user?.premium) {
           console.log('🔒 Vídeo premium detectado, usuário não premium, redirecionando...')
           router.push('/premium')
           return

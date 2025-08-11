@@ -72,7 +72,8 @@ export default function VideoCard({
   
   const handleClick = () => {
     // Se o vídeo é premium e o usuário não é premium, redirecionar para a página premium
-    if (premium && !session?.user?.premium) {
+    // Aguardar o carregamento da sessão antes de verificar
+    if (premium && session !== undefined && !session?.user?.premium) {
       router.push('/premium')
       return
     }
