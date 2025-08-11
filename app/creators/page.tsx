@@ -7,11 +7,13 @@ import Section from '@/components/Section'
 import InfiniteScrollTrigger from '@/components/InfiniteScrollTrigger'
 import { Search, Users } from 'lucide-react'
 import { useInfiniteCreators } from '@/hooks/useInfiniteCreators'
+import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 import { Creator } from '@/types/common'
 
 export default function CreatorsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const { creators, loading, loadingMore, error, pagination, loadMore, refetch } = useInfiniteCreators()
+  const { isPremium } = usePremiumStatus()
 
   const filteredCreators = useMemo(() => 
     creators.filter(creator =>
@@ -151,9 +153,9 @@ export default function CreatorsPage() {
                        {/* Informações do criador */}
                        <div className="flex-1 min-w-0">
                          {/* Nome do criador */}
-                         <h3 className="text-sm font-semibold text-theme-primary mb-1 truncate">
-                           {creator.name}
-                         </h3>
+                                                   <h3 className={`text-sm font-semibold mb-1 truncate text-theme-primary ${!isPremium ? 'blur-sm' : ''}`}>
+                            {creator.name}
+                          </h3>
                          
                          {/* Contador de vídeos */}
                          <div className="text-xs text-theme-secondary">

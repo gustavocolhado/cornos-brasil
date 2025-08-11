@@ -9,6 +9,7 @@ import VideoCard from '@/components/VideoCard'
 import Pagination from '@/components/Pagination'
 import { ArrowLeft, Play, Users, Eye } from 'lucide-react'
 import { formatDuration } from '@/utils/formatDuration'
+import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 
 interface Video {
   id: string
@@ -54,6 +55,7 @@ interface CreatorVideosResponse {
 export default function CreatorPage() {
   const params = useParams()
   const creatorId = params.id as string
+  const { isPremium } = usePremiumStatus()
   
   const [creator, setCreator] = useState<Creator | null>(null)
   const [videos, setVideos] = useState<Video[]>([])
@@ -195,10 +197,10 @@ export default function CreatorPage() {
               />
             </div>
             
-                         <div className="flex-1">
-               <h1 className="text-3xl md:text-4xl font-bold text-theme-primary mb-2">
-                 {creator.name}
-               </h1>
+                                     <div className="flex-1">
+              <h1 className={`text-3xl md:text-4xl font-bold mb-2 text-theme-primary ${!isPremium ? 'blur-sm' : ''}`}>
+                {creator.name}
+              </h1>
                
                {creator.description && (
                  <p className="text-theme-secondary mb-4 max-w-2xl">

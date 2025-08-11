@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Lock } from 'lucide-react'
+import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 
 interface VideoCardProps {
   id: string
@@ -43,6 +44,7 @@ export default function VideoCard({
   const [showTrailer, setShowTrailer] = useState(false)
   const router = useRouter()
   const { data: session } = useSession()
+  const { isPremium } = usePremiumStatus()
   
   // Função para construir a URL do thumbnail
   const getThumbnailUrl = (url: string, isIframe: boolean) => {
@@ -270,7 +272,7 @@ export default function VideoCard({
       {/* Creator Info */}
       {(creator || uploader) && (
         <p 
-          className="text-xs text-theme-secondary mt-1"
+          className={`text-xs mt-1 text-theme-secondary ${!isPremium ? 'blur-sm' : ''}`}
           itemProp="creator"
         >
           {uploader?.name || uploader?.username || creator}
