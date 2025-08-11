@@ -265,7 +265,7 @@ export default function VideoJSPlayer({
       try {
         const processed = await processIframeUrl(videoUrl)
         const corrected = fixUrl(processed)
-        const correctedPoster = poster ? fixUrl(poster) : poster
+        const correctedPoster = poster ? fixUrl(poster) : ''
         
         setProcessedVideoUrl(processed)
         setCorrectedVideoUrl(corrected)
