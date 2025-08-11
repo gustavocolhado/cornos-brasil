@@ -24,9 +24,9 @@ interface PlayerProps {
 // Função para tentar diferentes formatos de vídeo
 const tryDifferentFormats = async (videoId: string): Promise<string> => {
   const formats = [
-    `https://medias.cornosbrasilvip.com/video/${videoId}/index.m3u8`,
-    `https://medias.cornosbrasilvip.com/video/${videoId}/index.mp4`,
-    `https://medias.cornosbrasilvip.com/video/${videoId}/index.m3u`
+    `https://medias.cornosbrasilvip.com/videos/${videoId}/video.mp4`,
+    `https://medias.cornosbrasilvip.com/videos/${videoId}/index.m3u8`,
+    `https://medias.cornosbrasilvip.com/videos/${videoId}/index.m3u`
   ]
   
   console.log('🔄 tryDifferentFormats: Tentando formatos para ID:', videoId)
@@ -44,13 +44,48 @@ const tryDifferentFormats = async (videoId: string): Promise<string> => {
     }
   }
   
-  // Se nenhum formato funcionar, retorna o primeiro (m3u8)
-  console.log('⚠️ tryDifferentFormats: Nenhum formato funcionou, retornando m3u8')
+  // Se nenhum formato funcionar, retorna o primeiro (mp4)
+  console.log('⚠️ tryDifferentFormats: Nenhum formato funcionou, retornando mp4')
   return formats[0]
 }
 
+// Função para detectar automaticamente o formato disponível
+const detectAvailableFormat = async (videoId: string): Promise<string> => {
+  console.log('🔍 detectAvailableFormat: Detectando formato para ID:', videoId)
+  
+  // Tentar MP4 primeiro (mais comum)
+  try {
+    const mp4Url = `https://medias.cornosbrasilvip.com/videos/${videoId}/video.mp4`
+    console.log('🔍 detectAvailableFormat: Testando MP4:', mp4Url)
+    const response = await fetch(mp4Url, { method: 'HEAD' })
+    if (response.ok) {
+      console.log('✅ detectAvailableFormat: MP4 disponível')
+      return mp4Url
+    }
+  } catch (error) {
+    console.log('❌ detectAvailableFormat: MP4 não disponível:', error)
+  }
+  
+  // Tentar M3U8
+  try {
+    const m3u8Url = `https://medias.cornosbrasilvip.com/videos/${videoId}/index.m3u8`
+    console.log('🔍 detectAvailableFormat: Testando M3U8:', m3u8Url)
+    const response = await fetch(m3u8Url, { method: 'HEAD' })
+    if (response.ok) {
+      console.log('✅ detectAvailableFormat: M3U8 disponível')
+      return m3u8Url
+    }
+  } catch (error) {
+    console.log('❌ detectAvailableFormat: M3U8 não disponível:', error)
+  }
+  
+  // Fallback para MP4
+  console.log('⚠️ detectAvailableFormat: Nenhum formato detectado, usando MP4 como fallback')
+  return `https://medias.cornosbrasilvip.com/videos/${videoId}/video.mp4`
+}
+
 // Função para detectar e processar URLs de iframe
-const processIframeUrl = (url: string): string => {
+const processIframeUrl = async (url: string): Promise<string> => {
   if (!url) return url
   
   console.log('🔍 processIframeUrl: Verificando URL:', url)
@@ -66,9 +101,9 @@ const processIframeUrl = (url: string): string => {
       const videoId = embedMatch[1]
       console.log('🔍 processIframeUrl: ID extraído:', videoId)
       
-      // Construir a URL do vídeo (tentando primeiro m3u8, depois mp4)
-      const videoUrl = `https://medias.cornosbrasilvip.com/videos/${videoId}/index.m3u8`
-      console.log('🔍 processIframeUrl: URL do vídeo construída (m3u8):', videoUrl)
+      // Detectar automaticamente o formato disponível
+      const videoUrl = await detectAvailableFormat(videoId)
+      console.log('🔍 processIframeUrl: URL do vídeo detectada:', videoUrl)
       
       return videoUrl
     } else {
@@ -220,18 +255,35 @@ export default function VideoJSPlayer({
   const playerRef = useRef<Player | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string>('')
+  const [correctedVideoUrl, setCorrectedVideoUrl] = useState<string>('')
+  const [correctedPosterUrl, setCorrectedPosterUrl] = useState<string>('')
 
   // Processar URL de iframe e corrigir URLs malformadas
-  const processedVideoUrl = processIframeUrl(videoUrl)
-  const correctedVideoUrl = fixUrl(processedVideoUrl)
-  const correctedPosterUrl = poster ? fixUrl(poster) : poster
-
-  // Log inicial
   useEffect(() => {
-    console.log('🎬 VideoJSPlayer: Inicializando com URL:', correctedVideoUrl)
-    console.log('🎬 VideoJSPlayer: Poster:', correctedPosterUrl)
-    console.log('🎬 VideoJSPlayer: Title:', title)
-  }, [correctedVideoUrl, correctedPosterUrl, title])
+    const processUrl = async () => {
+      try {
+        const processed = await processIframeUrl(videoUrl)
+        const corrected = fixUrl(processed)
+        const correctedPoster = poster ? fixUrl(poster) : poster
+        
+        setProcessedVideoUrl(processed)
+        setCorrectedVideoUrl(corrected)
+        setCorrectedPosterUrl(correctedPoster)
+        
+        console.log('🎬 VideoJSPlayer: URL processada:', corrected)
+        console.log('🎬 VideoJSPlayer: Poster:', correctedPoster)
+        console.log('🎬 VideoJSPlayer: Title:', title)
+      } catch (error) {
+        console.error('❌ VideoJSPlayer: Erro ao processar URL:', error)
+        setError('Erro ao processar URL do vídeo')
+      }
+    }
+    
+    processUrl()
+  }, [videoUrl, poster, title])
+
+
 
   // Inicializar o player
   useEffect(() => {
@@ -241,8 +293,7 @@ export default function VideoJSPlayer({
     }
 
     if (!correctedVideoUrl) {
-      console.log('❌ VideoJSPlayer: videoUrl não fornecida')
-      setError('URL do vídeo não fornecida')
+      console.log('❌ VideoJSPlayer: Aguardando URL processada...')
       return
     }
 
@@ -451,7 +502,7 @@ export default function VideoJSPlayer({
         playerRef.current = null
       }
     }
-  }, [correctedVideoUrl, correctedPosterUrl, autoPlay, muted, loop, controls, preload, fluid, responsive, aspectRatio, onLoad, onError])
+  }, [correctedVideoUrl, correctedPosterUrl, autoPlay, muted, loop, controls, preload, fluid, responsive, aspectRatio, onLoad, onError, videoUrl])
 
   // Atualizar fonte do vídeo quando videoUrl mudar
   useEffect(() => {
