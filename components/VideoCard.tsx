@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import { Lock } from 'lucide-react'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 
@@ -43,7 +42,6 @@ export default function VideoCard({
 }: VideoCardProps) {
   const [showTrailer, setShowTrailer] = useState(false)
   const router = useRouter()
-  const { data: session } = useSession()
   const { isPremium } = usePremiumStatus()
   
   // Função para construir a URL do thumbnail
@@ -72,8 +70,7 @@ export default function VideoCard({
   
   const handleClick = () => {
     // Se o vídeo é premium e o usuário não é premium, redirecionar para a página premium
-    // Aguardar o carregamento da sessão antes de verificar
-    if (premium && session !== undefined && !session?.user?.premium) {
+    if (premium && !isPremium) {
       router.push('/premium')
       return
     }
@@ -205,7 +202,7 @@ export default function VideoCard({
         )}
         
         {/* Premium Overlay - Vídeo borrado com cadeado */}
-        {premium && !session?.user?.premium && (
+        {premium && !isPremium && (
           <div 
             className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-20"
             aria-label="Conteúdo Premium - Faça upgrade para desbloquear"
@@ -258,11 +255,13 @@ export default function VideoCard({
       
       {/* Title */}
       <h3 
-        className="text-sm text-theme-primary mt-2 line-clamp-2 group-hover:text-accent-red transition-colors"
+        className={`text-sm text-theme-primary mt-2 line-clamp-2 group-hover:text-accent-red transition-colors ${
+          premium && !isPremium ? 'blur-sm' : ''
+        }`}
         itemProp="name"
       >
         {title}
-        {premium && !session?.user?.premium && (
+        {premium && !isPremium && (
           <span className="inline-flex items-center ml-2 text-yellow-500">
             <Lock className="w-3 h-3 mr-1" aria-hidden="true" />
             Premium

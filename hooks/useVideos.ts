@@ -37,11 +37,25 @@ interface UseVideosOptions {
   category?: string
   page?: number
   limit?: number
+  isPremium?: boolean
+  timestamp?: number
 }
 
 // Cache simples para armazenar resultados
 const videoCache = new Map<string, { data: VideosResponse; timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
+
+// Função para limpar cache específico por categoria
+function clearCacheForCategory(category: string) {
+  const keysToDelete: string[] = []
+  videoCache.forEach((value, key) => {
+    if (key.includes(`category=${category}`)) {
+      keysToDelete.push(key)
+    }
+  })
+  keysToDelete.forEach(key => videoCache.delete(key))
+  console.log('🗑️ Cache limpo para categoria:', category)
+}
 
 export function useVideos(options: UseVideosOptions = {}) {
   const [videos, setVideos] = useState<Video[]>([])
@@ -53,6 +67,8 @@ export function useVideos(options: UseVideosOptions = {}) {
 
   const fetchVideos = useCallback(async (isPageChange = false) => {
     try {
+      console.log('🔍 useVideos - Buscando vídeos com opções:', options)
+      
       // Cancelar requisição anterior se existir
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
@@ -86,11 +102,24 @@ export function useVideos(options: UseVideosOptions = {}) {
         queryParams.append('category', options.category)
       }
 
+      if (options.isPremium !== undefined) {
+        queryParams.append('isPremium', options.isPremium.toString())
+      }
+
+      if (options.timestamp) {
+        queryParams.append('timestamp', options.timestamp.toString())
+      }
+
       const cacheKey = queryParams.toString()
       const cached = videoCache.get(cacheKey)
 
+      console.log('🔍 useVideos - Cache key:', cacheKey)
+      console.log('🔍 useVideos - Cache encontrado:', !!cached)
+      console.log('🔍 useVideos - Timestamp:', options.timestamp)
+
       // Verificar cache
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log('📦 useVideos - Usando cache')
         setVideos(cached.data.videos)
         setPagination(cached.data.pagination)
         setError(null)
@@ -106,6 +135,11 @@ export function useVideos(options: UseVideosOptions = {}) {
       }
       
       const data: VideosResponse = await response.json()
+      
+      console.log('📊 useVideos - Dados recebidos:', {
+        totalVideos: data.videos.length,
+        pagination: data.pagination
+      })
       
       // Armazenar no cache
       videoCache.set(cacheKey, { data, timestamp: Date.now() })
@@ -125,7 +159,7 @@ export function useVideos(options: UseVideosOptions = {}) {
       setLoading(false)
       setPageLoading(false)
     }
-  }, [options.filter, options.search, options.category, options.page, options.limit])
+  }, [options.filter, options.search, options.category, options.page, options.limit, options.isPremium, options.timestamp])
 
   useEffect(() => {
     fetchVideos()
@@ -143,6 +177,12 @@ export function useVideos(options: UseVideosOptions = {}) {
     fetchVideos(true) // Indicar que é mudança de página
   }, [fetchVideos])
 
+  // Função para forçar refetch ignorando cache
+  const forceRefetch = useCallback(() => {
+    console.log('🔄 useVideos - Forçando refetch')
+    fetchVideos()
+  }, [fetchVideos])
+
   return {
     videos,
     loading,
@@ -150,6 +190,7 @@ export function useVideos(options: UseVideosOptions = {}) {
     error,
     pagination,
     refetch: fetchVideos,
+    forceRefetch,
     changePage
   }
 } 

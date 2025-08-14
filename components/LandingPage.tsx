@@ -746,7 +746,9 @@ export default function LandingPage() {
       <header className="w-full bg-black px-4 py-4 md:px-8 md:py-6">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="text-yellow-400 font-bold text-xl md:text-2xl">
-            <Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} />
+            <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} />
+            </Link>
           </div>
           <div className="flex gap-2 md:gap-4">
             {session ? (
@@ -1105,12 +1107,21 @@ export default function LandingPage() {
              {/* Botão de Ação - Responsivo */}
        <div className="px-4 py-6 md:px-8 md:py-12">
          <div className="max-w-2xl mx-auto">
-                       <button 
-              onClick={() => handlePlanSelect(plans.find(p => p.popular) || plans[3])} // Seleciona o plano mais popular (anual)
-              className="block w-full bg-red-600 text-white font-bold py-4 md:py-6 rounded-lg text-center text-lg md:text-xl hover:bg-red-700 transition shadow-lg"
-            >
-              ASSINAR AGORA →
-            </button>
+           <div className="space-y-4">
+             <button 
+                onClick={() => handlePlanSelect(plans.find(p => p.popular) || plans[3])} // Seleciona o plano mais popular (anual)
+                className="block w-full bg-red-600 text-white font-bold py-4 md:py-6 rounded-lg text-center text-lg md:text-xl hover:bg-red-700 transition shadow-lg"
+              >
+                ASSINAR AGORA →
+              </button>
+             
+             <Link 
+               href="/"
+               className="block w-full bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-4 md:py-6 rounded-lg text-center text-lg md:text-xl transition shadow-lg border border-neutral-600 hover:border-neutral-500"
+             >
+               Acesse nosso conteúdo grátis →
+             </Link>
+           </div>
          </div>
        </div>
 
@@ -1180,12 +1191,21 @@ export default function LandingPage() {
               <p className="text-neutral-300 text-sm md:text-base mb-4">
                 Nossa equipe está pronta para ajudar! Entre em contato conosco.
               </p>
-                                                           <button 
-                  onClick={() => handlePlanSelect(plans.find(p => p.popular) || plans[3])}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg"
-                >
-                  ASSINAR AGORA
-                </button>
+                                                           <div className="space-y-3">
+                                                             <button 
+                                                                onClick={() => handlePlanSelect(plans.find(p => p.popular) || plans[3])}
+                                                                className="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg"
+                                                              >
+                                                                ASSINAR AGORA
+                                                              </button>
+                                                             
+                                                             <Link 
+                                                               href="/"
+                                                               className="block w-full bg-neutral-700 hover:bg-neutral-600 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg border border-neutral-600 hover:border-neutral-500"
+                                                             >
+                                                               Acesse nosso conteúdo grátis
+                                                             </Link>
+                                                           </div>
             </div>
           </div>
         </div>
@@ -1198,13 +1218,15 @@ export default function LandingPage() {
            <div className="text-center mb-8 md:mb-12">
              <div className="flex justify-center items-center">
                <div className="relative">
-                 <Image 
-                   src="/imgs/logo.png" 
-                   alt="Cornos Brasil" 
-                   width={180} 
-                   height={120}
-                   className="w-48 h-24"
-                 />
+                 <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+                   <Image 
+                     src="/imgs/logo.png" 
+                     alt="Cornos Brasil" 
+                     width={180} 
+                     height={120}
+                     className="w-48 h-24"
+                   />
+                 </Link>
                </div>
              </div>
              

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { X, Home, Video, Star, Tag, Grid, Tv, Search, Users, Upload, ChevronDown } from 'lucide-react'
 
 interface SidebarProps {
@@ -9,19 +10,20 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const router = useRouter()
   const [activeItem, setActiveItem] = useState('Porno Amador')
 
   const menuItems = [
-    { id: 'Porno Amador', icon: Home, isActive: true },
-    { id: 'Videos', icon: Video, hasDropdown: true },
-    { id: 'ThePornDude', icon: null, customIcon: '👤' },
-    { id: 'Estrelas Pornô', icon: Star },
-    { id: 'Tags', icon: Tag },
-    { id: 'Categorias', icon: Grid },
-    { id: 'Canais', icon: Tv },
-    { id: 'Termos Mais Buscados', icon: Search, hasDropdown: true },
-    { id: 'Comunidade', icon: Users },
-    { id: 'Upload', icon: Upload }
+    { id: 'Porno Amador', icon: Home, isActive: true, path: '/' },
+    { id: 'Videos', icon: Video, hasDropdown: true, path: '/videos' },
+    { id: 'ThePornDude', icon: null, customIcon: '👤', path: '/creators' },
+    { id: 'Estrelas Pornô', icon: Star, path: '/creators' },
+    { id: 'Tags', icon: Tag, path: '/tags' },
+    { id: 'Categorias', icon: Grid, path: '/categories' },
+    { id: 'Canais', icon: Tv, path: '/channels' },
+    { id: 'Termos Mais Buscados', icon: Search, hasDropdown: true, path: '/search' },
+    { id: 'Comunidade', icon: Users, path: '/community' },
+    { id: 'Upload', icon: Upload, path: '/upload' }
   ]
 
   return (
@@ -72,7 +74,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveItem(item.id)}
+                onClick={() => {
+                  setActiveItem(item.id)
+                  if (item.path) {
+                    router.push(item.path)
+                    onClose() // Fechar sidebar no mobile
+                  }
+                }}
                 className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg transition-colors ${
                   isActive 
                     ? 'bg-accent-red text-white' 

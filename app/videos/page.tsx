@@ -386,7 +386,7 @@ export default function VideosPage() {
                        />
                       
                       {/* Mostrar PremiumTeaser a cada 8 vídeos para usuários não premium */}
-                      {!session?.user?.premium && (index + 1) % 8 === 0 && (
+                      {!session?.user?.premium && (index + 1) % 11 === 0 && (
                         <div className="col-span-full mt-6">
                           <PremiumTeaser />
                         </div>

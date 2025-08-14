@@ -28,6 +28,11 @@ interface DashboardStats {
   totalLikes: number
   totalShares: number
   totalPlays: number
+  // Estatísticas do dia
+  usersRegisteredToday: number
+  revenueToday: number
+  activeUsersToday: number
+  viewsToday: number
 }
 
 interface RecentActivity {
@@ -53,7 +58,12 @@ export default function AdminDashboard() {
     activeUsers: 0,
     totalLikes: 0,
     totalShares: 0,
-    totalPlays: 0
+    totalPlays: 0,
+    // Estatísticas do dia
+    usersRegisteredToday: 0,
+    revenueToday: 0,
+    activeUsersToday: 0,
+    viewsToday: 0
   })
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -68,7 +78,10 @@ export default function AdminDashboard() {
 
         if (statsResponse.ok) {
           const statsData = await statsResponse.json()
+          console.log('📊 Dados recebidos da API:', statsData)
           setStats(statsData)
+        } else {
+          console.error('❌ Erro na resposta da API:', statsResponse.status, statsResponse.statusText)
         }
 
         if (activitiesResponse.ok) {
@@ -154,7 +167,76 @@ export default function AdminDashboard() {
         <p className="text-slate-600 mt-2">Visão geral do sistema</p>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* Estatísticas do Dia - Destaque */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">📊 Estatísticas de Hoje</h2>
+          <div className="text-sm opacity-90">
+            {new Date().toLocaleDateString('pt-BR', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Usuários Cadastrados</p>
+                <p className="text-2xl font-bold">{stats.usersRegisteredToday}</p>
+              </div>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <UserPlus className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Receita do Dia</p>
+                <p className="text-2xl font-bold">R$ {(stats.revenueToday || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <DollarSign className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Usuários Ativos</p>
+                <p className="text-2xl font-bold">{stats.activeUsersToday}</p>
+              </div>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Visualizações</p>
+                <p className="text-2xl font-bold">{stats.viewsToday.toLocaleString()}</p>
+              </div>
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Eye className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Estatísticas Gerais */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">📈 Estatísticas Gerais</h2>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-white/80 backdrop-blur-sm border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -209,7 +291,7 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">R$ {stats.totalRevenue.toLocaleString()}</div>
+                         <div className="text-2xl font-bold text-slate-900">R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-slate-500">
               +15.3% em relação ao mês passado
             </p>

@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') || 'recent'
     const search = searchParams.get('search') || ''
     const category = searchParams.get('category') || ''
+    const isPremiumParam = searchParams.get('isPremium')
+    const timestamp = searchParams.get('timestamp') // Para forçar nova busca
     
     const skip = (page - 1) * limit
 
@@ -63,6 +65,28 @@ export async function GET(request: NextRequest) {
         isUserPremium = user.premium && (!user.expireDate || new Date() < user.expireDate)
       }
     }
+
+    // Se o parâmetro isPremium foi passado, usar ele em vez da verificação da sessão
+    if (isPremiumParam !== null) {
+      isUserPremium = isPremiumParam === 'true'
+    }
+
+    console.log('🔍 API Videos - Parâmetros:', {
+      page,
+      limit,
+      filter,
+      search,
+      category,
+      isPremiumParam,
+      isUserPremium,
+      timestamp
+    })
+
+    // Log adicional para debug da categoria
+    console.log('🎯 API Videos - Categoria recebida:', category)
+    console.log('🎯 API Videos - Tipo da categoria:', typeof category)
+    console.log('🎯 API Videos - Categoria vazia?', category === '')
+    console.log('🎯 API Videos - Categoria é VIP Amadores?', category === 'VIP Amadores')
 
     // Construir where clause baseado nos filtros
     let whereClause: any = {}
@@ -123,14 +147,21 @@ export async function GET(request: NextRequest) {
     let totalVideos
 
     if (isUserPremium) {
-      // Para usuários premium: retornar apenas vídeos premium
+      // Para usuários premium: retornar apenas vídeos premium da categoria especificada
+      const vipWhereClause = {
+        ...whereClause,
+        premium: true,
+        category: {
+          has: category || 'VIP' // Usar categoria especificada ou VIP como padrão
+        }
+      }
+      
+      console.log('🔍 API Videos - Where clause para premium:', vipWhereClause)
+      
       if (filter === 'random') {
         // Para aleatório com usuários premium
         const allPremiumVideos = await prisma.video.findMany({
-          where: {
-            ...whereClause,
-            premium: true
-          },
+          where: vipWhereClause,
           select: {
             id: true,
             title: true,
@@ -150,16 +181,15 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        const shuffled = shuffleArray(allPremiumVideos, page)
+        // Usar timestamp como seed para garantir vídeos diferentes a cada chamada
+        const seed = timestamp ? parseInt(timestamp) % 1000000 : page
+        const shuffled = shuffleArray(allPremiumVideos, seed)
         videos = shuffled.slice(skip, skip + limit)
         totalVideos = allPremiumVideos.length
       } else {
         // Busca normal com paginação para usuários premium
         videos = await prisma.video.findMany({
-          where: {
-            ...whereClause,
-            premium: true
-          },
+          where: vipWhereClause,
           orderBy,
           skip,
           take: limit,
@@ -183,10 +213,7 @@ export async function GET(request: NextRequest) {
         })
 
         totalVideos = await prisma.video.count({
-          where: {
-            ...whereClause,
-            premium: true
-          }
+          where: vipWhereClause
         })
       }
     } else {
@@ -217,7 +244,9 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        const shuffled = shuffleArray(allFreeVideos, page)
+        // Usar timestamp como seed para garantir vídeos diferentes a cada chamada
+        const seed = timestamp ? parseInt(timestamp) % 1000000 : page
+        const shuffled = shuffleArray(allFreeVideos, seed)
         const freeVideos = shuffled.slice(0, Math.floor(limit * 0.8))
         
         // Buscar alguns vídeos premium para misturar

@@ -24,6 +24,7 @@ import Player from '@/components/Player'
 import VideoCard from '@/components/VideoCard'
 import { useRelatedVideos } from '@/hooks/useRelatedVideos'
 import { useVideoActions } from '@/hooks/useVideoActions'
+import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 import AdIframe300x250 from '@/components/ads/300x250'
 import AdIframe728x90 from '@/components/ads/728x90'
 import AdIframe300x100 from '@/components/ads/300x100'
@@ -58,6 +59,7 @@ export default function VideoPage() {
   const router = useRouter()
   const videoUrl = params.url as string
   const { data: session } = useSession()
+  const { isPremium } = usePremiumStatus()
   
   const [video, setVideo] = useState<VideoData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -329,13 +331,15 @@ export default function VideoPage() {
             {/* Main Video Player */}
             <div className="flex-1">
               {/* Banner Mobile - Acima do Vídeo */}
-              <div className="lg:hidden mb-4">
-                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                  <div className="w-full h-[100px] bg-theme-input rounded-lg flex items-center justify-center">
-                    <AdIframe300x100 />
+              {!isPremium && (
+                <div className="lg:hidden mb-4">
+                  <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                    <div className="w-full h-[100px] bg-theme-input rounded-lg flex items-center justify-center">
+                      <AdIframe300x100 />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <Player
                 videoUrl={getVideoUrl(video.videoUrl, video.isIframe || false)}
@@ -349,13 +353,15 @@ export default function VideoPage() {
               />
 
               {/* Banner Desktop - Abaixo do Vídeo */}
-              <div className="hidden lg:block mt-4">
-                <div className="bg-theme-card border border-theme-primary rounded-lg p-4">
-                  <div className="w-full h-[90px] bg-theme-input rounded-lg flex items-center justify-center">
-                    <AdIframe728x90 />
+              {!isPremium && (
+                <div className="hidden lg:block mt-4">
+                  <div className="bg-theme-card border border-theme-primary rounded-lg p-4">
+                    <div className="w-full h-[90px] bg-theme-input rounded-lg flex items-center justify-center">
+                      <AdIframe728x90 />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Engagement Buttons */}
               <div className="flex items-center space-x-4 mt-4">
@@ -417,6 +423,12 @@ export default function VideoPage() {
               <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mt-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-theme-primary">Informações do Vídeo</h2>
+                  {isPremium && (
+                    <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-100 px-3 py-1 rounded-lg">
+                      <span className="text-sm">✨</span>
+                      <span className="text-sm font-medium">Sem anúncios</span>
+                    </div>
+                  )}
                   <button className="text-theme-muted hover:text-theme-primary">
                     <Info className="w-5 h-5" />
                   </button>
@@ -458,13 +470,15 @@ export default function VideoPage() {
               </div>
 
               {/* Banner Mobile - Abaixo das Informações */}
-              <div className="lg:hidden mt-4">
-                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                    <AdIframe300x250 />
+              {!isPremium && (
+                <div className="lg:hidden mt-4">
+                  <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                    <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                      <AdIframe300x250 />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Vídeos Relacionados */}
               <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mt-4">
@@ -500,28 +514,30 @@ export default function VideoPage() {
             </div>
 
             {/* Sidebar com Anúncios Desktop */}
-            <div className="hidden lg:block lg:w-80 space-y-4">
-              {/* Anúncio 1 - 300x250 */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                  <AdIframe300x250 />
+            {!isPremium && (
+              <div className="hidden lg:block lg:w-80 space-y-4">
+                {/* Anúncio 1 - 300x250 */}
+                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                    <AdIframe300x250 />
+                  </div>
                 </div>
-              </div>
 
-              {/* Anúncio 2 - 300x250 */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                  <AdIframe300x250 />
+                {/* Anúncio 2 - 300x250 */}
+                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                    <AdIframe300x250 />
+                  </div>
                 </div>
-              </div>
 
-              {/* Anúncio 3 - 300x250 */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
-                  <AdIframe300x250 />
+                {/* Anúncio 3 - 300x250 */}
+                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
+                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                    <AdIframe300x250 />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

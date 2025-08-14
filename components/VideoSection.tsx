@@ -1,26 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Loader2 } from 'lucide-react'
 import VideoCard from './VideoCard'
 import Section from './Section'
 import Pagination from './Pagination'
 import { useVideos } from '@/hooks/useVideos'
+import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 import { formatDuration } from '@/utils/formatDuration'
 
 export default function VideoSection() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'liked'>('recent')
   const [currentPage, setCurrentPage] = useState(1)
+  const [vipCategory, setVipCategory] = useState<'VIP' | 'VIP Amadores'>('VIP')
   const router = useRouter()
+  const { isPremium } = usePremiumStatus()
   
-  const { videos, pagination, loading, error, refetch } = useVideos({
+  // Sempre usar filtro aleatório na página inicial para alternar os vídeos
+  const effectiveFilter = 'random'
+  const effectiveCategory = isPremium ? vipCategory : (selectedCategory || undefined)
+  
+  console.log('🎯 VideoSection - Estado atual:', {
+    isPremium,
+    vipCategory,
+    effectiveCategory,
+    effectiveFilter,
+    currentPage
+  })
+  
+  const [refreshTimestamp, setRefreshTimestamp] = useState(Date.now())
+
+  const { videos, pagination, loading, error, refetch, forceRefetch } = useVideos({
     page: currentPage,
     limit: 20,
-    filter: sortBy,
-    category: selectedCategory || undefined
+    filter: effectiveFilter,
+    category: effectiveCategory,
+    isPremium: isPremium,
+    timestamp: refreshTimestamp
   })
+
+  // Remover alternância automática - vídeos só mudam ao atualizar a página
 
   const handleVideoClick = (video: any) => {
     console.log('Video clicked:', video)
@@ -39,52 +60,83 @@ export default function VideoSection() {
     setCurrentPage(1) // Reset para primeira página ao mudar filtro
   }
 
+  const handleVipCategoryChange = (category: 'VIP' | 'VIP Amadores') => {
+    console.log('🔄 Mudando categoria VIP para:', category)
+    
+    // Redirecionar para a página da categoria específica
+    if (category === 'VIP Amadores') {
+      console.log('🚀 Redirecionando para /categories/vip-amadores')
+      router.push('/categories/vip-amadores')
+    } else {
+      console.log('🔄 Mantendo na página inicial com categoria VIP')
+      // Para VIP, manter na página inicial mas atualizar o filtro
+      setVipCategory(category)
+      setCurrentPage(1) // Reset para primeira página ao mudar categoria
+      
+      // Forçar refetch após um pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => {
+        forceRefetch()
+      }, 100)
+    }
+  }
+
   return (
     <Section background="white" padding="md">
       {/* Section Header */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <h2 className="text-xl md:text-2xl font-bold text-theme-primary">NOVOS VIDEOS</h2>
-            <Plus className="text-accent-red" size={20} />
+            <h2 className="text-xl md:text-2xl font-bold text-theme-primary">
+              {isPremium ? `VIDEOS ${vipCategory} ALEATÓRIOS` : 'VIDEOS DE CORNO GRÁTIS'}
+            </h2>
+            <div className="flex items-center space-x-2">
+              <Plus className="text-accent-red" size={20} />
+              {loading && (
+                <div className="flex items-center space-x-1 text-green-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-xs">Atualizando...</span>
+                </div>
+              )}
+            </div>
           </div>
           
-                     <div className="flex items-center space-x-4 overflow-x-auto pb-2">
-             <button 
-               onClick={() => handleSortChange('recent')}
-               className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                 sortBy === 'recent' 
-                   ? 'bg-accent-red text-white' 
-                   : 'bg-theme-hover text-theme-primary'
-               }`}
-             >
-               <span className="text-sm">VIDEOS RECENTES</span>
-             </button>
-             
-             <button 
-               onClick={() => handleSortChange('popular')}
-               className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                 sortBy === 'popular' 
-                   ? 'bg-accent-red text-white' 
-                   : 'bg-theme-hover text-theme-primary'
-               }`}
-             >
-               <span className="text-sm">MAIS VISTOS</span>
-             </button>
-             
-             <button 
-               onClick={() => handleSortChange('liked')}
-               className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                 sortBy === 'liked' 
-                   ? 'bg-accent-red text-white' 
-                   : 'bg-theme-hover text-theme-primary'
-               }`}
-             >
-               <span className="text-sm">MAIS CURTIDOS</span>
-             </button>
-             
+                     {!isPremium && (
+                       <div className="flex items-center space-x-4">
 
-           </div>
+                       </div>
+                     )}
+                     
+                                          {isPremium && (
+                       <div className="flex items-center space-x-4">        
+                         
+
+                         
+                           {/* Botões para escolher categoria VIP */}
+                           <div className="flex items-center space-x-2">
+                           <button 
+                             onClick={() => handleVipCategoryChange('VIP')}
+                             className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                               vipCategory === 'VIP' 
+                                 ? 'bg-accent-red text-white' 
+                                 : 'bg-theme-hover text-theme-primary'
+                             }`}
+                           >
+                             <span className="text-sm">VIP</span>
+                           </button>
+                           
+                           <button 
+                             onClick={() => handleVipCategoryChange('VIP Amadores')}
+                             className={`flex items-center space-x-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                               vipCategory === 'VIP Amadores' 
+                                 ? 'bg-accent-red text-white' 
+                                 : 'bg-theme-hover text-theme-primary'
+                             }`}
+                           >
+                             <span className="text-sm">VIP AMADORES</span>
+                           </button>
+                         </div>
+                       </div>
+                     )}
         </div>
       </div>
 

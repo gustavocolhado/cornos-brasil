@@ -15,6 +15,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
+    // Obter data de hoje (início e fim do dia)
+    const today = new Date()
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
+
     // Buscar estatísticas do banco de dados
     const [
       totalUsers,
@@ -24,7 +29,12 @@ export async function GET(request: NextRequest) {
       activeUsers,
       totalLikes,
       totalShares,
-      totalPlays
+      totalPlays,
+      // Estatísticas do dia
+      usersRegisteredToday,
+      revenueToday,
+      activeUsersToday,
+      viewsToday
     ] = await Promise.all([
       // Total de usuários
       prisma.user.count(),
@@ -65,7 +75,54 @@ export async function GET(request: NextRequest) {
       Promise.resolve(0),
       
       // Total de reproduções (pode ser implementado quando necessário)
-      Promise.resolve(0)
+      Promise.resolve(0),
+
+      // Usuários cadastrados hoje
+      prisma.user.count({
+        where: {
+          created_at: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      }),
+
+      // Receita de assinaturas hoje
+      prisma.payment.aggregate({
+        _sum: {
+          amount: true
+        },
+        where: {
+          status: 'completed',
+          transactionDate: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      }),
+
+      // Usuários ativos que acessaram o site hoje
+      prisma.user.count({
+        where: {
+          update_at: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      }),
+
+      // Visualizações de vídeos hoje (soma das visualizações incrementadas hoje)
+      prisma.video.aggregate({
+        _sum: {
+          viewCount: true
+        },
+        where: {
+          updated_at: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      })
     ])
 
     const stats = {
@@ -76,8 +133,20 @@ export async function GET(request: NextRequest) {
       activeUsers,
       totalLikes,
       totalShares,
-      totalPlays
+      totalPlays,
+      // Estatísticas do dia
+      usersRegisteredToday,
+      revenueToday: revenueToday._sum.amount || 0,
+      activeUsersToday,
+      viewsToday: viewsToday._sum.viewCount || 0
     }
+
+    console.log('📊 Estatísticas calculadas:', {
+      usersRegisteredToday,
+      revenueToday: revenueToday._sum.amount || 0,
+      activeUsersToday,
+      viewsToday: viewsToday._sum.viewCount || 0
+    })
 
     return NextResponse.json(stats)
   } catch (error) {

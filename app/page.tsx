@@ -7,10 +7,12 @@ import VideoSection from '@/components/VideoSection'
 import PremiumBanner from '@/components/PremiumBanner'
 import SEOHead from '@/components/SEOHead'
 import { useSession } from 'next-auth/react'
+import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 import Section from '@/components/Section'
 
 export default function Home() {
   const { data: session } = useSession()
+  const { isPremium } = usePremiumStatus()
 
   return (
     <>
@@ -41,6 +43,7 @@ export default function Home() {
         <main className="min-h-screen bg-theme-primary">
           {/* Mostrar PremiumBanner apenas para usuários não premium */}
           {!session?.user?.premium && <PremiumBanner />}
+                    
           <Creators />
           <VideoSection />
           {/* SEO Content Section */}
