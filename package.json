@@ -18,6 +18,8 @@
     "test-admin-stats": "node scripts/test-admin-stats.js",
     "test-revenue": "node scripts/test-revenue.js",
     "test-revenue-simple": "node scripts/test-revenue-simple.js",
+    "test-media-url": "node scripts/test-media-url.js",
+    "test-premium-videos": "node scripts/test-premium-videos.js",
     "populate-test-revenue": "node scripts/populate-test-revenue.js"
   },
   "dependencies": {

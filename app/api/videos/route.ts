@@ -22,7 +22,10 @@ function buildMediaUrl(url: string | null): string | null {
   const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
   const cleanUrl = url.startsWith('/') ? url : `/${url}`
   
-  return `${cleanMediaUrl}${cleanUrl}`
+  const fullUrl = `${cleanMediaUrl}${cleanUrl}`
+  console.log('🔗 API buildMediaUrl:', { original: url, mediaUrl, fullUrl })
+  
+  return fullUrl
 }
 
 // Função para processar vídeos e construir URLs
@@ -157,6 +160,7 @@ export async function GET(request: NextRequest) {
       }
       
       console.log('🔍 API Videos - Where clause para premium:', vipWhereClause)
+      console.log('🔍 API Videos - Buscando vídeos premium da categoria:', category || 'VIP')
       
       if (filter === 'random') {
         // Para aleatório com usuários premium
@@ -214,6 +218,18 @@ export async function GET(request: NextRequest) {
 
         totalVideos = await prisma.video.count({
           where: vipWhereClause
+        })
+      }
+      
+      // Processar vídeos premium
+      videos = processVideos(videos)
+      console.log('🔍 API Videos - Vídeos premium processados:', videos.length)
+      if (videos.length > 0) {
+        console.log('🔍 API Videos - Primeiro vídeo premium:', {
+          title: videos[0].title,
+          thumbnailUrl: videos[0].thumbnailUrl,
+          iframe: videos[0].iframe,
+          premium: videos[0].premium
         })
       }
     } else {

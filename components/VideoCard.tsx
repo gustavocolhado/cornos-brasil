@@ -46,13 +46,8 @@ export default function VideoCard({
   
   // Função para construir a URL do thumbnail
   const getThumbnailUrl = (url: string, isIframe: boolean) => {
+    // Se é iframe, retornar a URL como está (geralmente já é completa)
     if (isIframe) {
-      return url
-    }
-    
-    const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
-    if (!mediaUrl) {
-      console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
       return url
     }
     
@@ -61,11 +56,27 @@ export default function VideoCard({
       return url
     }
     
+    const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
+    if (!mediaUrl) {
+      console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
+      // Se não há mediaUrl configurada, tentar usar a URL como está
+      return url
+    }
+    
     // Remove barra dupla se existir
     const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
     const cleanThumbnailUrl = url.startsWith('/') ? url : `/${url}`
     
-    return `${cleanMediaUrl}${cleanThumbnailUrl}`
+    const fullUrl = `${cleanMediaUrl}${cleanThumbnailUrl}`
+    console.log('🔗 Thumbnail URL construída:', { 
+      original: url, 
+      mediaUrl, 
+      fullUrl, 
+      isIframe,
+      hasMediaUrl: !!mediaUrl 
+    })
+    
+    return fullUrl
   }
   
   const handleClick = () => {
