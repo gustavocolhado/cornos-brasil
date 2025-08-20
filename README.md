@@ -134,136 +134,189 @@ npm run start
 
 Este projeto é apenas para fins educacionais e de demonstração. 
 
-# CORNOS BRASIL - Video Player com Video.js
+# CORNOS BRASIL - Video Player com HLS.js
 
-Este projeto utiliza o Video.js para reprodução de vídeos, oferecendo uma experiência moderna e responsiva.
+Este projeto utiliza o HLS.js para reprodução de vídeos HLS, oferecendo uma experiência moderna e responsiva.
 
-## Player com Video.js
+## Player com HLS.js
 
-O componente `Player` foi atualizado para usar o Video.js, oferecendo:
+O componente `Player` foi atualizado para usar o HLS.js, oferecendo:
 
-### Funcionalidades
+- ✅ Reprodução nativa de HLS (.m3u8)
+- ✅ Fallback automático para HLS nativo quando disponível
+- ✅ Suporte a MP4 e outros formatos
+- ✅ Controles nativos do navegador
+- ✅ Interface responsiva e moderna
+- ✅ Tratamento robusto de erros
 
-- ✅ Reprodução de vídeos MP4 e HLS (.m3u8)
-- ✅ Controles personalizados em português
-- ✅ Suporte a diferentes velocidades de reprodução (0.5x - 2x)
-- ✅ Controle de volume
-- ✅ Tela cheia
-- ✅ Progress bar interativa
-- ✅ Loading overlay
-- ✅ Tratamento de erros
-- ✅ Responsivo para mobile e desktop
-- ✅ Suporte a poster/thumbnail
-- ✅ Autoplay configurável
-- ✅ Loop configurável
-- ✅ Mute configurável
+## Verificação VIP Otimizada
 
-### Uso
+### 🚀 **Melhorias Implementadas:**
 
-```tsx
-import Player from '@/components/Player'
+1. **Verificação Local**: O status premium agora é verificado usando apenas os dados da sessão do usuário
+2. **Sem Chamadas API**: Eliminadas as chamadas desnecessárias para `/api/user/premium-status`
+3. **Verificação de Expiração**: Inclui verificação automática da data de expiração
+4. **Performance**: Redução significativa de requisições ao servidor
+5. **Consistência**: Status sempre sincronizado com a sessão do usuário
 
-// Uso básico
-<Player 
-  videoUrl="https://example.com/video.mp4"
-  poster="https://example.com/thumbnail.jpg"
-  title="Título do Vídeo"
-/>
+### 📋 **Hooks Disponíveis:**
 
-// Uso avançado
-<Player 
-  videoUrl="https://example.com/video.m3u8"
-  poster="https://example.com/thumbnail.jpg"
-  title="Título do Vídeo"
-  autoPlay={false}
-  muted={false}
-  loop={false}
-  controls={true}
-  preload="metadata"
-  fluid={true}
-  responsive={true}
-  aspectRatio="16:9"
-  onError={(error) => console.error('Erro:', error)}
-  onLoad={() => console.log('Vídeo carregado')}
-/>
+```typescript
+// Hook completo com loading e mensagens
+const { isPremium, premiumExpiresAt, message, loading } = usePremiumStatus()
+
+// Hook simples para verificações rápidas
+const isPremium = useIsPremium()
+
+// Função utilitária para uso fora de componentes
+const isPremium = checkPremiumStatus(user)
 ```
 
-### Props
+### 🔧 **Como Funciona:**
+
+1. **Dados da Sessão**: O NextAuth já inclui `premium` e `expireDate` na sessão
+2. **Verificação Local**: O hook verifica se `premium = true` E `expireDate > now`
+3. **Atualização Automática**: Quando a sessão muda, o status é atualizado automaticamente
+4. **Sem Cache**: Não há necessidade de cache manual ou limpeza
+
+### 📊 **APIs Deprecated:**
+
+As seguintes APIs podem ser removidas após confirmação:
+- `/api/user/premium-status` - Status agora vem da sessão
+- `/api/user/clear-premium-cache` - Cache não é mais necessário
+
+## Props do Player
 
 | Prop | Tipo | Padrão | Descrição |
 |------|------|--------|-----------|
 | `videoUrl` | `string` | - | URL do vídeo (obrigatório) |
-| `poster` | `string` | - | URL da thumbnail/poster |
+| `poster` | `string` | - | URL da thumbnail |
 | `title` | `string` | - | Título do vídeo |
 | `autoPlay` | `boolean` | `false` | Reproduzir automaticamente |
-| `muted` | `boolean` | `false` | Iniciar mutado |
+| `muted` | `boolean` | `false` | Vídeo sem som |
 | `loop` | `boolean` | `false` | Repetir vídeo |
 | `controls` | `boolean` | `true` | Mostrar controles |
 | `preload` | `'auto' \| 'metadata' \| 'none'` | `'metadata'` | Estratégia de pré-carregamento |
-| `fluid` | `boolean` | `true` | Layout fluido |
-| `responsive` | `boolean` | `true` | Responsivo |
-| `aspectRatio` | `string` | `'16:9'` | Proporção do vídeo |
 | `onError` | `(error: string) => void` | - | Callback de erro |
 | `onLoad` | `() => void` | - | Callback de carregamento |
 
 ### Estilos Personalizados
 
-O Video.js vem com estilos personalizados que incluem:
+O player HLS vem com estilos personalizados que incluem:
 
-- Botão de play centralizado com animação
-- Controles com gradiente transparente
+- Controles nativos do navegador
 - Progress bar com cor personalizada (#dc2626)
-- Volume slider vertical
+- Volume slider com estilo personalizado
 - Responsividade para mobile
 - Compatibilidade com tema escuro
 
 ### Suporte a Formatos
 
-- **MP4**: Suporte nativo
-- **HLS (.m3u8)**: Suporte via Video.js HLS plugin
+- **HLS (.m3u8)**: Suporte nativo via HLS.js
+- **MP4**: Suporte nativo do navegador
 - **Outros formatos**: Dependem do suporte do navegador
 
 ### Configuração
 
-O Video.js está configurado com:
+O HLS.js está configurado com:
 
-- Idioma: Português (pt-BR)
-- Velocidades: 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
-- Controles: Play/Pause, Volume, Tempo, Progresso, Velocidade, Tela Cheia
-- Layout: Fluido e responsivo
+- Worker habilitado para melhor performance
+- Modo de baixa latência
+- Buffer de 90 segundos
+- Fallback automático para HLS nativo quando disponível
 
-### Troubleshooting
-
-Se o vídeo não carregar:
-
-1. Verifique se a URL do vídeo está correta
-2. Verifique se o formato é suportado
-3. Verifique se há problemas de CORS
-4. Verifique o console do navegador para erros
-
-### Exemplo de Implementação
+## Uso Básico
 
 ```tsx
-// app/video/[url]/page.tsx
-import Player from '@/components/Player'
+import VideoJSPlayer from '@/components/Player'
 
-export default function VideoPage() {
+function VideoPage() {
   return (
-    <div className="container mx-auto p-4">
-      <Player 
-        videoUrl={video.videoUrl}
-        poster={video.thumbnailUrl}
-        title={video.title}
-        onError={(error) => {
-          console.error('Erro no player:', error)
-          // Mostrar mensagem de erro para o usuário
-        }}
-        onLoad={() => {
-          console.log('Vídeo carregado com sucesso')
-          // Atualizar estatísticas de visualização
-        }}
+    <VideoJSPlayer
+      videoUrl="https://example.com/video.m3u8"
+      poster="https://example.com/thumbnail.jpg"
+      title="Meu Vídeo"
+      controls={true}
+      preload="metadata"
+      onError={(error) => console.error('Erro:', error)}
+      onLoad={() => console.log('Vídeo carregado')}
+    />
+  )
+}
+```
+
+## Uso Avançado
+
+```tsx
+import VideoJSPlayer from '@/components/Player'
+
+function VideoPage() {
+  const handleError = (error: string) => {
+    console.error('Erro no player:', error)
+    // Implementar lógica de fallback
+  }
+
+  const handleLoad = () => {
+    console.log('Vídeo carregado com sucesso')
+    // Implementar analytics ou outras ações
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <VideoJSPlayer
+        videoUrl={videoData.url}
+        poster={videoData.thumbnail}
+        title={videoData.title}
+        autoPlay={false}
+        muted={false}
+        loop={false}
+        controls={true}
+        preload="metadata"
+        onError={handleError}
+        onLoad={handleLoad}
       />
     </div>
   )
 }
-``` 
+```
+
+## Estrutura do Projeto
+
+```
+components/
+├── Player.tsx          # Player principal com HLS.js
+├── VideoCard.tsx       # Card de vídeo com verificação VIP
+└── VideoSection.tsx    # Seção de vídeos
+
+hooks/
+├── usePremiumStatus.ts # Hook para verificação VIP
+└── useVideos.ts        # Hook para buscar vídeos
+
+contexts/
+└── AuthContext.tsx     # Contexto de autenticação com verificação VIP
+```
+
+## Tecnologias Utilizadas
+
+- **Next.js 14**: Framework React
+- **HLS.js**: Biblioteca para reprodução HLS
+- **NextAuth.js**: Autenticação e sessão
+- **Prisma**: ORM para banco de dados
+- **Tailwind CSS**: Estilização
+- **TypeScript**: Tipagem estática
+
+## Performance
+
+- ✅ Verificação VIP sem chamadas API
+- ✅ Cache automático da sessão
+- ✅ Lazy loading de vídeos
+- ✅ Otimização de imagens
+- ✅ Bundle splitting automático
+
+## Segurança
+
+- ✅ Verificação de autenticação
+- ✅ Validação de URLs
+- ✅ Sanitização de dados
+- ✅ Proteção contra XSS
+- ✅ Rate limiting nas APIs 

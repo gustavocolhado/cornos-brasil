@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth.config'
 
+// ⚠️ DEPRECATED: Esta API não é mais necessária
+// O cache premium agora é gerenciado automaticamente pelos dados da sessão
+// Esta API pode ser removida após confirmar que não há outros usos
+
 export async function POST() {
   try {
     const session = await getServerSession(authOptions)

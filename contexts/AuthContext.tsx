@@ -24,7 +24,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (session?.user) {
-      setIsPremium(session.user.premium || false)
+      const user = session.user
+      const now = new Date()
+      
+      // Verificar se é premium e se não expirou
+      const isPremium = user.premium && (!user.expireDate || new Date(user.expireDate) > now)
+      
+      console.log('🔍 AuthContext: Verificando status premium:', {
+        premium: user.premium,
+        expireDate: user.expireDate,
+        now: now.toISOString(),
+        isPremium
+      })
+      
+      setIsPremium(isPremium)
     } else {
       setIsPremium(false)
     }

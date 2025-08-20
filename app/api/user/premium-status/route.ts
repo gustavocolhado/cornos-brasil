@@ -3,6 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth.config'
 import { prisma } from '@/lib/prisma'
 
+// ⚠️ DEPRECATED: Esta API não é mais necessária
+// O status premium agora é verificado usando os dados da sessão do usuário
+// Esta API pode ser removida após confirmar que não há outros usos
+
 export async function GET() {
   try {
     // Verificar autenticação

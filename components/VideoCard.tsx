@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock } from 'lucide-react'
-import { usePremiumStatus } from '@/hooks/usePremiumStatus'
+import { useIsPremium } from '@/hooks/usePremiumStatus'
 
 interface VideoCardProps {
   id: string
@@ -42,7 +42,7 @@ export default function VideoCard({
 }: VideoCardProps) {
   const [showTrailer, setShowTrailer] = useState(false)
   const router = useRouter()
-  const { isPremium } = usePremiumStatus()
+  const isPremium = useIsPremium()
   
   // Função para construir a URL do thumbnail
   const getThumbnailUrl = (url: string, isIframe: boolean) => {

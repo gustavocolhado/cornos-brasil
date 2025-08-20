@@ -51,22 +51,20 @@ export async function GET(request: NextRequest) {
     
     const skip = (page - 1) * limit
 
-    // Verificar se o usuário é premium
+    // Verificar se o usuário é premium usando dados da sessão
     const session = await getServerSession(authOptions)
     let isUserPremium = false
     
-    if (session?.user?.email) {
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: {
-          premium: true,
-          expireDate: true
-        }
-      })
+    if (session?.user) {
+      const user = session.user
+      const now = new Date()
+      isUserPremium = user.premium && (!user.expireDate || new Date(user.expireDate) > now)
       
-      if (user) {
-        isUserPremium = user.premium && (!user.expireDate || new Date() < user.expireDate)
-      }
+      console.log('🔍 API Videos - Status premium da sessão:', {
+        premium: user.premium,
+        expireDate: user.expireDate,
+        isUserPremium
+      })
     }
 
     // Se o parâmetro isPremium foi passado, usar ele em vez da verificação da sessão
