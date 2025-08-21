@@ -48,6 +48,7 @@ export async function GET(request: Request) {
       { url: '/terms', changefreq: 'monthly', priority: 0.4 },
       { url: '/privacy', changefreq: 'monthly', priority: 0.4 },
       { url: '/dmca', changefreq: 'monthly', priority: 0.4 },
+      { url: '/remocao', changefreq: 'monthly', priority: 0.4 },
       { url: '/support', changefreq: 'monthly', priority: 0.5 },
     ];
 

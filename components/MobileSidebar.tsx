@@ -1,6 +1,7 @@
 'use client'
 
 import { X, Home, Play, Users, Crown, Tag, FolderOpen, MessageCircle, HelpCircle } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface MobileSidebarProps {
   isOpen: boolean
@@ -8,6 +9,7 @@ interface MobileSidebarProps {
 }
 
 export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
+  const { isPremium } = useAuth()
   return (
     <>
       {/* Overlay */}
@@ -74,13 +76,15 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
               <div className="border-b border-theme-input mx-4" />
             </li>
             
-            <li>
-              <a href="/premium" className="flex items-center space-x-3 px-4 py-3 text-yellow-500 hover:bg-theme-hover transition-colors">
-                <Crown size={20} className="text-yellow-500" />
-                <span className="flex-1">Premium</span>
-              </a>
-              <div className="border-b border-theme-input mx-4" />
-            </li>
+            {!isPremium && (
+              <li>
+                <a href="/premium" className="flex items-center space-x-3 px-4 py-3 text-yellow-500 hover:bg-theme-hover transition-colors">
+                  <Crown size={20} className="text-yellow-500" />
+                  <span className="flex-1">Premium</span>
+                </a>
+                <div className="border-b border-theme-input mx-4" />
+              </li>
+            )}
             
             <li>
               <a href="/categories" className="flex items-center space-x-3 px-4 py-3 text-theme-primary hover:bg-theme-hover transition-colors">

@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { 
   ThumbsUp,
-  Share2,
   Download,
   Info,
   Flag,
@@ -178,6 +177,88 @@ export default function VideoPage() {
     }
   }
 
+  // Função para download do vídeo
+  const handleDownload = async () => {
+    if (!video) return
+
+    // Verificar se o usuário está logado
+    if (!session?.user) {
+      alert('Faça login para baixar vídeos')
+      router.push('/login')
+      return
+    }
+
+    // Verificar se o usuário é premium para downloads
+    if (!isPremium) {
+      alert('Downloads estão disponíveis apenas para usuários Premium. Faça upgrade para baixar vídeos.')
+      router.push('/premium')
+      return
+    }
+
+    try {
+      // Obter URL de download da API
+      const response = await fetch(`/api/videos/${video.url}/download`)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao baixar vídeo')
+      }
+
+      // Verificar se é um redirecionamento ou resposta JSON
+      if (response.redirected) {
+        // É um redirecionamento para download direto
+        alert('Download iniciado com sucesso!')
+      } else {
+        // É uma resposta JSON
+        const data = await response.json()
+        
+        if (data.downloadUrl) {
+          if (data.isDirectFile) {
+            // Para arquivos diretos, criar iframe oculto para forçar download
+            const iframe = document.createElement('iframe')
+            iframe.style.display = 'none'
+            iframe.src = data.downloadUrl
+            document.body.appendChild(iframe)
+            
+            // Remover iframe após um tempo
+            setTimeout(() => {
+              document.body.removeChild(iframe)
+            }, 5000)
+            
+            alert('Download iniciado com sucesso!')
+          } else {
+            // É uma URL externa, abrir em nova aba
+            window.open(data.downloadUrl, '_blank')
+            alert(data.message || 'Download iniciado em nova aba!')
+          }
+        } else {
+          throw new Error('URL de download não encontrada')
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao baixar vídeo:', error)
+      alert('Erro ao baixar vídeo. Tente novamente.')
+    }
+  }
+
+  // Função para solicitar remoção
+  const handleReport = () => {
+    if (!video) return
+
+    // Redirecionar para a página de remoção com os dados do vídeo
+    const reportData = {
+      urls: `${window.location.origin}/video/${video.url}`,
+      category: 'outros',
+      motivation: `Solicitação de remoção para o vídeo: ${video.title}`,
+      videoTitle: video.title,
+      videoUrl: video.url
+    }
+
+    // Codificar os dados para passar via URL
+    const encodedData = encodeURIComponent(JSON.stringify(reportData))
+    router.push(`/remocao?data=${encodedData}`)
+  }
+
   // Função para lidar com favoritos
   const handleFavorite = async () => {
     if (!session?.user) {
@@ -342,7 +423,7 @@ export default function VideoPage() {
               )}
 
               <Player
-                videoUrl={getVideoUrl(video.videoUrl, video.isIframe || false)}
+                videoUrl={video.isIframe ? video.videoUrl : getVideoUrl(video.videoUrl, video.isIframe || false)}
                 poster={getThumbnailUrl(video.thumbnailUrl, video.isIframe || false)}
                 title={video.title}
                 onError={(error) => console.error('Erro no player:', error)}
@@ -364,7 +445,7 @@ export default function VideoPage() {
               )}
 
               {/* Engagement Buttons */}
-              <div className="flex items-center space-x-4 mt-4">
+              <div className="flex flex-wrap items-center gap-2 mt-4">
                 <button 
                   onClick={handleLike}
                   disabled={actionsLoading}
@@ -403,19 +484,28 @@ export default function VideoPage() {
                   <span className="text-sm font-medium">INFO</span>
                 </button>
 
-                <button className="flex items-center space-x-2 bg-theme-hover hover:bg-theme-input text-theme-primary px-4 py-2 rounded-lg transition-colors">
-                  <Share2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">COMPARTILHAR</span>
-                </button>
-
-                <button className="flex items-center space-x-2 bg-theme-hover hover:bg-theme-input text-theme-primary px-4 py-2 rounded-lg transition-colors">
+                <button 
+                  onClick={() => handleDownload()}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    isPremium 
+                      ? 'bg-theme-hover hover:bg-theme-input text-theme-primary' 
+                      : 'bg-gray-400 cursor-not-allowed text-gray-600'
+                  }`}
+                  disabled={!isPremium}
+                  title={!isPremium ? 'Downloads disponíveis apenas para usuários Premium' : 'Baixar vídeo'}
+                >
                   <Download className="w-4 h-4" />
-                  <span className="text-sm font-medium">BAIXAR</span>
+                  <span className="text-sm font-medium">
+                    {isPremium ? 'BAIXAR' : 'PREMIUM'}
+                  </span>
                 </button>
 
-                <button className="flex items-center space-x-2 bg-theme-hover hover:bg-theme-input text-theme-primary px-4 py-2 rounded-lg transition-colors">
+                <button 
+                  onClick={() => handleReport()}
+                  className="flex items-center space-x-2 bg-theme-hover hover:bg-theme-input text-theme-primary px-4 py-2 rounded-lg transition-colors"
+                >
                   <Flag className="w-4 h-4" />
-                  <span className="text-sm font-medium">DENUNCIAR</span>
+                  <span className="text-sm font-medium">SOLICITAR REMOÇÃO</span>
                 </button>
               </div>
 

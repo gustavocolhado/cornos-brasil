@@ -10,7 +10,7 @@ import UserStatus from './UserStatus'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 export default function Header() {
-  const { session, status, signOut, openAuthModal, closeAuthModal, isAuthModalOpen } = useAuth()
+  const { session, status, signOut, openAuthModal, closeAuthModal, isAuthModalOpen, isPremium } = useAuth()
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -256,10 +256,12 @@ export default function Header() {
             <a href="/" className="text-accent-red border-b-2 border-accent-red pb-1 text-sm font-medium whitespace-nowrap">Home</a>
             <a href="/videos" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm whitespace-nowrap">Videos</a>
             <a href="/creators" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm whitespace-nowrap">Criadores</a>
-            <a href="/premium" className="flex items-center gap-1 text-yellow-500 hover:text-yellow-400 transition-colors text-sm font-medium whitespace-nowrap">
-              <Crown className="w-4 h-4" />
-              Premium
-            </a>
+            {!isPremium && (
+              <a href="/premium" className="flex items-center gap-1 text-yellow-500 hover:text-yellow-400 transition-colors text-sm font-medium whitespace-nowrap">
+                <Crown className="w-4 h-4" />
+                Premium
+              </a>
+            )}
             <a href="/categories" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm whitespace-nowrap">Categorias</a>
             <a href="/tags" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm whitespace-nowrap">Tags</a>
             <a href="/contact" className="text-theme-secondary hover:text-theme-primary transition-colors text-sm whitespace-nowrap">Contato</a>

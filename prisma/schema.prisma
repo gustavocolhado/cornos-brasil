@@ -355,6 +355,29 @@ model CampaignConversion {
   @@index([convertedAt])
   @@map("campaign_conversions")
 }
+
+model ContentRemovalRequest {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  urls              String   // URLs do conteúdo a ser removido
+  category          String   // Categoria da denúncia
+  motivation        String   // Motivação da denúncia
+  requesterName     String   // Nome do solicitante
+  requesterEmail    String   // Email do solicitante
+  requesterAddress  String?  // Endereço do solicitante
+  requesterPhone    String   // Telefone do solicitante
+  requestDate       DateTime // Data da solicitação
+  signature         String   // Assinatura digital
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+  adminNotes        String?  // Notas do administrador
+  processedAt       DateTime? // Data de processamento
+  processedBy       String?  @db.ObjectId // ID do admin que processou
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("content_removal_requests")
+}
  
 model VerificationToken {
   identifier String @id @default(auto()) @map("_id") @db.ObjectId

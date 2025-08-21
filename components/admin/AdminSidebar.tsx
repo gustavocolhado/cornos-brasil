@@ -16,7 +16,8 @@ import {
   Target,
   UserPlus,
   Tag,
-  FolderOpen
+  FolderOpen,
+  AlertTriangle
 } from 'lucide-react'
 
 const menuItems = [
@@ -79,6 +80,11 @@ const menuItems = [
     title: 'Segurança',
     href: '/admin/security',
     icon: Shield
+  },
+  {
+    title: 'Remoção de Conteúdo',
+    href: '/admin/remocao',
+    icon: AlertTriangle
   }
 ]
 

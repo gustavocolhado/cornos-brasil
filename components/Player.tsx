@@ -115,6 +115,12 @@ export default function VideoJSPlayer({
   const getVideoType = (url: string) => {
     if (!url) return 'video/mp4'
     
+    // Verificar se é uma URL de embed
+    if (url.includes('/embed/') || url.includes('embed')) {
+      console.log('🎬 Player: URL de embed detectada, usando iframe')
+      return 'iframe'
+    }
+    
     const extension = url.split('.').pop()?.toLowerCase()
     console.log('🎬 Player: Extensão detectada:', extension)
     
@@ -180,6 +186,14 @@ export default function VideoJSPlayer({
       hlsRef.current = null
     }
 
+    // Verificar se é iframe
+    if (videoType === 'iframe') {
+      console.log('🎬 Player: Usando iframe para embed')
+      setIsLoading(false)
+      onLoad?.()
+      return
+    }
+    
     // Verificar se é HLS
     if (videoType === 'application/x-mpegURL') {
       console.log('🎬 Player: Detectado HLS, verificando suporte...')
@@ -377,19 +391,40 @@ export default function VideoJSPlayer({
     )
   }
 
+  // Verificar se deve usar iframe
+  const shouldUseIframe = getVideoType(videoUrl) === 'iframe'
+
   return (
     <div className="relative bg-black aspect-video rounded-lg overflow-hidden">
-             {/* Loading Overlay */}
+      {/* Loading Overlay */}
+      {isLoading && !shouldUseIframe && (
+        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
+          <div className="text-white text-center">
+            <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <div className="text-sm">Carregando vídeo...</div>
+          </div>
+        </div>
+      )}
 
-
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        className="w-full h-full"
-        playsInline
-        webkit-playsinline="true"
-      />
-
+      {/* Iframe para embeds */}
+      {shouldUseIframe ? (
+        <iframe
+          src={videoUrl}
+          className="w-full h-full"
+          frameBorder="0"
+          allowFullScreen
+          allow="autoplay; fullscreen; picture-in-picture"
+          title={title || 'Vídeo'}
+        />
+      ) : (
+        /* Video Element */
+        <video
+          ref={videoRef}
+          className="w-full h-full"
+          playsInline
+          webkit-playsinline="true"
+        />
+      )}
     </div>
   )
 }

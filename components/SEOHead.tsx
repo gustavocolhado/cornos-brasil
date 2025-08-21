@@ -5,7 +5,7 @@ import Head from 'next/head'
 interface SEOHeadProps {
   title?: string
   description?: string
-  keywords?: string[]
+  keywords?: string[] | string
   canonical?: string
   ogImage?: string
   ogType?: string
@@ -31,7 +31,7 @@ export default function SEOHead({
     'videos de sexo amador',
     'porno grátis',
     'videos porno brasileiro'
-  ],
+  ] as string[],
   canonical = 'https://cornosbrasil.com',
   ogImage = '/imgs/logo.png',
   ogType = 'website',
@@ -39,12 +39,15 @@ export default function SEOHead({
 }: SEOHeadProps) {
   const fullTitle = title.includes('CORNOS BRASIL') ? title : `${title} | CORNOS BRASIL`
   
+  // Handle keywords as string or array
+  const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords
+  
   return (
     <Head>
       {/* Basic Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      <meta name="keywords" content={keywords.join(', ')} />
+      <meta name="keywords" content={keywordsString} />
       <meta name="author" content="CORNOS BRASIL" />
       <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
       
