@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Shield, Mail, AlertTriangle, FileText, User, Phone, MapPin, Calendar, CheckCircle } from 'lucide-react'
 import Layout from '@/components/Layout'
@@ -8,7 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import SEOHead from '@/components/SEOHead'
 
-export default function RemocaoPage() {
+function RemocaoPageContent() {
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     urls: '',
@@ -420,5 +420,24 @@ export default function RemocaoPage() {
         <Footer />
       </Layout>
     </>
+  )
+}
+
+export default function RemocaoPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <Header />
+        <div className="min-h-screen bg-gradient-to-br from-theme-background via-theme-card to-theme-primary/5 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-theme-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-theme-primary">Carregando...</p>
+          </div>
+        </div>
+        <Footer />
+      </Layout>
+    }>
+      <RemocaoPageContent />
+    </Suspense>
   )
 }
