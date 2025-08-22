@@ -44,13 +44,6 @@ export async function GET(request: NextRequest) {
       prisma.category.count({ where })
     ])
 
-    console.log('🔍 API Categories - Busca realizada:', {
-      where,
-      slug,
-      categoriesFound: categories.length,
-      total
-    })
-
     return NextResponse.json({
       categories,
       pagination: {

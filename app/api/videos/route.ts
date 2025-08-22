@@ -23,7 +23,7 @@ function buildMediaUrl(url: string | null): string | null {
   const cleanUrl = url.startsWith('/') ? url : `/${url}`
   
   const fullUrl = `${cleanMediaUrl}${cleanUrl}`
-  console.log('🔗 API buildMediaUrl:', { original: url, mediaUrl, fullUrl })
+  
   
   return fullUrl
 }
@@ -60,11 +60,7 @@ export async function GET(request: NextRequest) {
       const now = new Date()
       isUserPremium = user.premium && (!user.expireDate || new Date(user.expireDate) > now)
       
-      console.log('🔍 API Videos - Status premium da sessão:', {
-        premium: user.premium,
-        expireDate: user.expireDate,
-        isUserPremium
-      })
+
     }
 
     // Se o parâmetro isPremium foi passado, usar ele em vez da verificação da sessão
@@ -72,22 +68,11 @@ export async function GET(request: NextRequest) {
       isUserPremium = isPremiumParam === 'true'
     }
 
-    console.log('🔍 API Videos - Parâmetros:', {
-      page,
-      limit,
-      filter,
-      search,
-      category,
-      isPremiumParam,
-      isUserPremium,
-      timestamp
-    })
 
-    // Log adicional para debug da categoria
-    console.log('🎯 API Videos - Categoria recebida:', category)
-    console.log('🎯 API Videos - Tipo da categoria:', typeof category)
-    console.log('🎯 API Videos - Categoria vazia?', category === '')
-    console.log('🎯 API Videos - Categoria é VIP Amadores?', category === 'VIP Amadores')
+
+
+
+
 
     // Construir where clause baseado nos filtros
     let whereClause: any = {}
@@ -148,17 +133,21 @@ export async function GET(request: NextRequest) {
     let totalVideos
 
     if (isUserPremium) {
-      // Para usuários premium: retornar apenas vídeos premium da categoria especificada
-      const vipWhereClause = {
+      // Para usuários premium: retornar apenas vídeos premium
+      let vipWhereClause = {
         ...whereClause,
-        premium: true,
-        category: {
-          has: category || 'VIP' // Usar categoria especificada ou VIP como padrão
+        premium: true
+      }
+      
+      // Se há um termo de busca, buscar em todas as categorias premium
+      // Se não há busca, usar categoria especificada ou VIP como padrão
+      if (!search) {
+        vipWhereClause.category = {
+          has: category || 'VIP'
         }
       }
       
-      console.log('🔍 API Videos - Where clause para premium:', vipWhereClause)
-      console.log('🔍 API Videos - Buscando vídeos premium da categoria:', category || 'VIP')
+
       
       if (filter === 'random') {
         // Para aleatório com usuários premium
@@ -221,15 +210,8 @@ export async function GET(request: NextRequest) {
       
       // Processar vídeos premium
       videos = processVideos(videos)
-      console.log('🔍 API Videos - Vídeos premium processados:', videos.length)
-      if (videos.length > 0) {
-        console.log('🔍 API Videos - Primeiro vídeo premium:', {
-          title: videos[0].title,
-          thumbnailUrl: videos[0].thumbnailUrl,
-          iframe: videos[0].iframe,
-          premium: videos[0].premium
-        })
-      }
+      
+      
     } else {
       // Para usuários não premium: misturar vídeos gratuitos com alguns premium
       if (filter === 'random') {
@@ -306,6 +288,8 @@ export async function GET(request: NextRequest) {
         totalVideos = allFreeVideos.length
       } else {
         // Busca normal com paginação para usuários não premium
+
+        
         // Buscar vídeos gratuitos com paginação
         const freeVideos = await prisma.video.findMany({
           where: {
@@ -374,6 +358,8 @@ export async function GET(request: NextRequest) {
         })
 
         videos = processVideos(mixedVideos.slice(0, limit))
+        
+
         
         // Contar total de vídeos gratuitos para paginação
         totalVideos = await prisma.video.count({

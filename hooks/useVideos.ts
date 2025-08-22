@@ -65,9 +65,9 @@ export function useVideos(options: UseVideosOptions = {}) {
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const fetchVideos = useCallback(async (isPageChange = false) => {
+  const fetchVideos = async (isPageChange = false) => {
     try {
-      console.log('🔍 useVideos - Buscando vídeos com opções:', options)
+  
       
       // Cancelar requisição anterior se existir
       if (abortControllerRef.current) {
@@ -113,13 +113,12 @@ export function useVideos(options: UseVideosOptions = {}) {
       const cacheKey = queryParams.toString()
       const cached = videoCache.get(cacheKey)
 
-      console.log('🔍 useVideos - Cache key:', cacheKey)
-      console.log('🔍 useVideos - Cache encontrado:', !!cached)
-      console.log('🔍 useVideos - Timestamp:', options.timestamp)
+
+
 
       // Verificar cache
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        console.log('📦 useVideos - Usando cache')
+  
         setVideos(cached.data.videos)
         setPagination(cached.data.pagination)
         setError(null)
@@ -136,10 +135,7 @@ export function useVideos(options: UseVideosOptions = {}) {
       
       const data: VideosResponse = await response.json()
       
-      console.log('📊 useVideos - Dados recebidos:', {
-        totalVideos: data.videos.length,
-        pagination: data.pagination
-      })
+
       
       // Armazenar no cache
       videoCache.set(cacheKey, { data, timestamp: Date.now() })
@@ -159,7 +155,7 @@ export function useVideos(options: UseVideosOptions = {}) {
       setLoading(false)
       setPageLoading(false)
     }
-  }, [options.filter, options.search, options.category, options.page, options.limit, options.isPremium, options.timestamp])
+  }
 
   useEffect(() => {
     fetchVideos()
@@ -170,18 +166,17 @@ export function useVideos(options: UseVideosOptions = {}) {
         abortControllerRef.current.abort()
       }
     }
-  }, [fetchVideos])
+  }, [options.filter, options.search, options.category, options.page, options.limit, options.isPremium])
 
   // Função específica para mudança de página
-  const changePage = useCallback((page: number) => {
+  const changePage = (page: number) => {
     fetchVideos(true) // Indicar que é mudança de página
-  }, [fetchVideos])
+  }
 
   // Função para forçar refetch ignorando cache
-  const forceRefetch = useCallback(() => {
-    console.log('🔄 useVideos - Forçando refetch')
+  const forceRefetch = () => {
     fetchVideos()
-  }, [fetchVideos])
+  }
 
   return {
     videos,

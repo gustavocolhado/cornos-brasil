@@ -1,7 +1,8 @@
 'use client'
 
-import { X, Home, Play, Users, Crown, Tag, FolderOpen, MessageCircle, HelpCircle } from 'lucide-react'
+import { X, Home, Play, Users, Crown, Tag, FolderOpen, MessageCircle, HelpCircle, Search } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 interface MobileSidebarProps {
   isOpen: boolean
@@ -10,6 +11,7 @@ interface MobileSidebarProps {
 
 export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const { isPremium } = useAuth()
+  const router = useRouter()
   return (
     <>
       {/* Overlay */}
@@ -47,6 +49,32 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
           <button className="text-theme-primary hover:text-accent-red transition-colors">
             <Users size={24} />
           </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="p-4 border-b border-theme-input">
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            const formData = new FormData(e.currentTarget)
+            const searchTerm = formData.get('search') as string
+            if (searchTerm.trim()) {
+              router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`)
+              onClose()
+            }
+          }} className="flex items-center theme-input rounded-lg overflow-hidden">
+            <div className="flex-1 flex items-center px-3">
+              <Search className="w-4 h-4 text-theme-secondary mr-2" />
+              <input
+                name="search"
+                type="text"
+                placeholder="Pesquisar videos..."
+                className="flex-1 bg-transparent py-2 focus:outline-none text-theme-primary text-sm"
+              />
+            </div>
+            <button type="submit" className="theme-btn-primary px-4 py-2 text-sm">
+              BUSCAR
+            </button>
+          </form>
         </div>
 
         {/* Menu Items */}

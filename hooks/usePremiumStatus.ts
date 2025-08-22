@@ -44,12 +44,7 @@ export function usePremiumStatus() {
       // Verificar se é premium e se não expirou
       const isPremium = user.premium && (!user.expireDate || new Date(user.expireDate) > now)
       
-      console.log('🔍 usePremiumStatus: Verificando status da sessão:', {
-        premium: user.premium,
-        expireDate: user.expireDate,
-        now: now.toISOString(),
-        isPremium
-      })
+
 
       setPremiumStatus({
         isPremium,
@@ -103,5 +98,5 @@ export function checkPremiumStatus(user: any): boolean {
 
 // Função para limpar o cache (mantida para compatibilidade, mas agora não faz nada)
 export function clearPremiumStatusCache() {
-  console.log('🗑️ usePremiumStatus: Cache limpo (não aplicável - usando dados da sessão)')
+  // Cache não aplicável - usando dados da sessão
 } 

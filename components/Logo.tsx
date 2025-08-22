@@ -15,6 +15,7 @@ export default function Logo() {
         width={180}
         height={180}
         className="w-full"
+        priority
       />
     </Link>
   )

@@ -26,6 +26,12 @@ export const metadata: Metadata = {
   authors: [{ name: 'CORNOS BRASIL' }],
   creator: 'CORNOS BRASIL',
   publisher: 'CORNOS BRASIL',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
+  manifest: '/manifest.json',
   formatDetection: {
     email: false,
     address: false,

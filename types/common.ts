@@ -25,7 +25,7 @@ export interface Video {
   viewCount: number
   likesCount: number
   videoUrl: string
-  thumbnailUrl: string
+  thumbnailUrl: string | null
   duration: number | null
   premium: boolean
   creator: string | null

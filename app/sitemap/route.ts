@@ -39,6 +39,7 @@ export async function GET(request: Request) {
     const staticLinks = [
       { url: '/', changefreq: 'daily', priority: 1.0 },
       { url: '/videos', changefreq: 'hourly', priority: 0.9 },
+      { url: '/search', changefreq: 'daily', priority: 0.8 },
       { url: '/creators', changefreq: 'daily', priority: 0.8 },
       { url: '/premium', changefreq: 'weekly', priority: 0.7 },
       { url: '/login', changefreq: 'monthly', priority: 0.6 },

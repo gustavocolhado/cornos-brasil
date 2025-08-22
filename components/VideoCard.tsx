@@ -8,10 +8,10 @@ import { useIsPremium } from '@/hooks/usePremiumStatus'
 interface VideoCardProps {
   id: string
   title: string
-  duration: string
-  thumbnailUrl: string
+  duration: string | number
+  thumbnailUrl: string | null
   videoUrl: string
-  trailerUrl?: string
+  trailerUrl?: string | null
   isIframe?: boolean
   premium?: boolean
   viewCount?: number
@@ -45,7 +45,12 @@ export default function VideoCard({
   const isPremium = useIsPremium()
   
   // Função para construir a URL do thumbnail
-  const getThumbnailUrl = (url: string, isIframe: boolean) => {
+  const getThumbnailUrl = (url: string | null | undefined, isIframe: boolean) => {
+    // Se não há URL, retornar URL padrão
+    if (!url) {
+      return '/imgs/logo.png' // URL padrão quando não há thumbnail
+    }
+    
     // Se é iframe, retornar a URL como está (geralmente já é completa)
     if (isIframe) {
       return url
@@ -68,14 +73,6 @@ export default function VideoCard({
     const cleanThumbnailUrl = url.startsWith('/') ? url : `/${url}`
     
     const fullUrl = `${cleanMediaUrl}${cleanThumbnailUrl}`
-    console.log('🔗 Thumbnail URL construída:', { 
-      original: url, 
-      mediaUrl, 
-      fullUrl, 
-      isIframe,
-      hasMediaUrl: !!mediaUrl 
-    })
-    
     return fullUrl
   }
   

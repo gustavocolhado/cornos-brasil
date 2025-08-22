@@ -13,6 +13,8 @@ Um site adulto moderno construído com Next.js 14 e Tailwind CSS, inspirado no l
 - 🏷️ Seção de tags mais buscadas
 - 🎥 Grid de vídeos com cards
 - 🎭 Ícones do Lucide React
+- 🔞 Verificação de idade obrigatória
+- 🛡️ Proteção para menores de 18 anos
 
 ## Tecnologias Utilizadas
 
@@ -98,6 +100,31 @@ cornosbrasilnew/
 - Badges (HD, ADS)
 - Labels
 - Título
+
+### AgeVerificationModal
+- Modal de verificação de idade obrigatória
+- Aparece na primeira visita ao site
+- Armazena confirmação no localStorage
+- Redireciona menores para site seguro
+- Design responsivo e acessível
+
+### AgeVerificationWrapper
+- Wrapper que controla a exibição do modal
+- Verifica estado no localStorage
+- Mostra loading durante verificação
+- Integra com o sistema de providers
+
+## Testando a Verificação de Idade
+
+### Para Desenvolvedores
+1. **Resetar verificação**: No menu do usuário (desktop), clique em "🧪 Reset Age Check"
+2. **Via console**: Execute `localStorage.removeItem("ageConfirmed")` e recarregue a página
+3. **Script de teste**: Execute `node scripts/test-age-verification.js`
+
+### Para Usuários Finais
+- O modal aparece automaticamente na primeira visita
+- Após confirmar, não aparece novamente (salvo no localStorage)
+- Se recusar, é redirecionado para um site seguro
 
 ## Personalização
 

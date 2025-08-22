@@ -22,29 +22,21 @@ export default function VideoSection() {
   const effectiveFilter = 'random'
   const effectiveCategory = isPremium ? vipCategory : (selectedCategory || undefined)
   
-  console.log('🎯 VideoSection - Estado atual:', {
-    isPremium,
-    vipCategory,
-    effectiveCategory,
-    effectiveFilter,
-    currentPage
-  })
+
   
-  const [refreshTimestamp, setRefreshTimestamp] = useState(Date.now())
+
 
   const { videos, pagination, loading, error, refetch, forceRefetch } = useVideos({
     page: currentPage,
     limit: 20,
     filter: effectiveFilter,
     category: effectiveCategory,
-    isPremium: isPremium,
-    timestamp: refreshTimestamp
+    isPremium: isPremium
   })
 
   // Remover alternância automática - vídeos só mudam ao atualizar a página
 
   const handleVideoClick = (video: any) => {
-    console.log('Video clicked:', video)
     // Navegar para a página do vídeo
     router.push(`/video/${video.id}`)
   }
@@ -61,14 +53,10 @@ export default function VideoSection() {
   }
 
   const handleVipCategoryChange = (category: 'VIP' | 'VIP Amadores') => {
-    console.log('🔄 Mudando categoria VIP para:', category)
-    
     // Redirecionar para a página da categoria específica
     if (category === 'VIP Amadores') {
-      console.log('🚀 Redirecionando para /categories/vip-amadores')
       router.push('/categories/vip-amadores')
     } else {
-      console.log('🔄 Mantendo na página inicial com categoria VIP')
       // Para VIP, manter na página inicial mas atualizar o filtro
       setVipCategory(category)
       setCurrentPage(1) // Reset para primeira página ao mudar categoria

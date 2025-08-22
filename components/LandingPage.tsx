@@ -747,7 +747,7 @@ export default function LandingPage() {
         <div className="flex items-center justify-between max-w-4xl mx-auto">
           <div className="text-yellow-400 font-bold text-xl md:text-2xl">
             <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
-              <Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} />
+              <Image src="/imgs/logo.png" alt="Cornos Brasil" width={130} height={100} priority />
             </Link>
           </div>
           <div className="flex gap-2 md:gap-4">

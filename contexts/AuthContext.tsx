@@ -30,12 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Verificar se é premium e se não expirou
       const isPremium = user.premium && (!user.expireDate || new Date(user.expireDate) > now)
       
-      console.log('🔍 AuthContext: Verificando status premium:', {
-        premium: user.premium,
-        expireDate: user.expireDate,
-        now: now.toISOString(),
-        isPremium
-      })
+
       
       setIsPremium(isPremium)
     } else {
