@@ -592,7 +592,7 @@ export default function VideoPage() {
                         viewCount={relatedVideo.viewCount}
 
                         category={relatedVideo.category}
-                        creator={relatedVideo.creator}
+                        creator={relatedVideo.creator || undefined}
                         uploader={null}
                       />
                     ))}

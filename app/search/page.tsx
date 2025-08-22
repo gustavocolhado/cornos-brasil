@@ -290,12 +290,12 @@ export default function SearchPage() {
                           duration={video.duration ? formatDuration(video.duration) : '0:00'}
                           thumbnailUrl={video.thumbnailUrl}
                           videoUrl={video.videoUrl}
-                          trailerUrl={video.trailerUrl}
+                          trailerUrl={video.trailerUrl || undefined}
                           isIframe={video.iframe}
                           premium={video.premium}
                           viewCount={video.viewCount}
                           category={video.category}
-                          creator={video.creator}
+                          creator={video.creator || undefined}
                         />
                       ))}
                     </div>
