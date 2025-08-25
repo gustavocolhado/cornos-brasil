@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const search = searchParams.get('search') || ''
-    const slug = searchParams.get('slug') || ''
-
+    const url = new URL(request.url)
+    const search = url.searchParams.get('search') || ''
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
     // Construir condições de busca
@@ -19,10 +19,6 @@ export async function GET(request: NextRequest) {
         { name: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } }
       ]
-    }
-
-    if (slug) {
-      where.slug = slug
     }
 
     // Buscar categorias

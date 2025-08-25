@@ -21,6 +21,8 @@ import Layout from '@/components/Layout'
 import Header from '@/components/Header'
 import Player from '@/components/Player'
 import VideoCard from '@/components/VideoCard'
+import VideoSEOHead from '@/components/VideoSEOHead'
+import VideoBreadcrumbs from '@/components/VideoBreadcrumbs'
 import { useRelatedVideos } from '@/hooks/useRelatedVideos'
 import { useVideoActions } from '@/hooks/useVideoActions'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
@@ -375,10 +377,32 @@ export default function VideoPage() {
   }
 
   return (
-    <Layout>
-      <Header />
+    <>
+      <VideoSEOHead
+        title={video.title}
+        description={video.description}
+        thumbnailUrl={video.thumbnailUrl}
+        videoUrl={video.isIframe ? video.videoUrl : getVideoUrl(video.videoUrl, video.isIframe || false)}
+        duration={video.duration}
+        uploadDate={video.uploadTime}
+        creatorName={video.creator}
+        tags={video.tags}
+        category={video.category}
+        viewCount={video.viewCount}
+        likesCount={currentLikesCount}
+        canonical={`https://cornosbrasil.com/video/${video.url}`}
+      />
+      <Layout>
+        <Header />
       <main className="bg-theme-primary min-h-screen mt-5">
         <div className="container-content py-6">
+          {/* Breadcrumbs */}
+          <VideoBreadcrumbs 
+            title={video.title}
+            category={video.category}
+            videoUrl={video.url}
+          />
+          
           {/* Top Bar */}
           <div className="bg-theme-card border border-theme-primary text-theme-primary p-4 rounded-t-lg">
             <div className="flex items-center justify-between">
@@ -631,6 +655,7 @@ export default function VideoPage() {
           </div>
         </div>
       </main>
-    </Layout>
-  )
+        </Layout>
+      </>
+    )
 } 

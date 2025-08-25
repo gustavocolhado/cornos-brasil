@@ -15,6 +15,9 @@ export default function robots(): MetadataRoute.Robots {
         '/premium/pending',
       ],
     },
-    sitemap: 'https://cornosbrasil.com/sitemap.xml',
+    sitemap: [
+      'https://cornosbrasil.com/sitemap.xml',
+      'https://cornosbrasil.com/sitemap/videos'
+    ],
   }
 } 

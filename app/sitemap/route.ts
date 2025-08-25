@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 const domains = [
   { domain: 'www.cornosbrasil.com' },
   { domain: 'cornosbrasil.com' },
@@ -25,10 +27,18 @@ export async function GET(request: Request) {
     // Cria o stream do sitemap com o domínio específico
     const sitemapStream = new SitemapStream({ hostname: `https://${hostname}` });
 
-    // Buscar vídeos dinâmicos (não premium)
+    // Buscar vídeos dinâmicos (não premium) com mais informações
     const dynamicRoutes = await prisma.video.findMany({
       where: { premium: false },
-      select: { url: true, url_en: true, url_es: true },
+      select: { 
+        url: true, 
+        url_en: true, 
+        url_es: true,
+        title: true,
+        category: true,
+        created_at: true,
+        updated_at: true
+      },
     }) || [];
 
     // Buscar categorias e tags
@@ -64,18 +74,54 @@ export async function GET(request: Request) {
         priority: link.priority,
       }));
 
-      // Links dinâmicos (vídeos)
+      // Links dinâmicos (vídeos) com prioridades baseadas na categoria
       const videoLinks = dynamicRoutes.flatMap((route) => {
+        // Determinar prioridade baseada na categoria
+        let priority = 0.8;
+        if (route.category && route.category.includes('VIP')) {
+          priority = 0.9;
+        } else if (route.category && route.category.includes('AMADORES')) {
+          priority = 0.85;
+        }
+        
+        // Determinar frequência de mudança baseada na data de atualização
+        let changefreq = 'weekly';
+        if (route.updated_at) {
+          const daysSinceUpdate = Math.floor((Date.now() - new Date(route.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+          if (daysSinceUpdate < 7) {
+            changefreq = 'daily';
+          } else if (daysSinceUpdate < 30) {
+            changefreq = 'weekly';
+          } else {
+            changefreq = 'monthly';
+          }
+        }
+
         const videoLinks = [
-          { url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/video/${route.url}`, changefreq: 'daily', priority: 0.8 },
+          { 
+            url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/video/${route.url}`, 
+            changefreq: changefreq, 
+            priority: priority,
+            lastmod: route.updated_at ? new Date(route.updated_at).toISOString() : undefined
+          },
         ];
 
         if (lang === 'en' && route.url_en) {
-          videoLinks.push({ url: `https://${hostname}/en/video/${route.url_en}`, changefreq: 'daily', priority: 0.8 });
+          videoLinks.push({ 
+            url: `https://${hostname}/en/video/${route.url_en}`, 
+            changefreq: changefreq, 
+            priority: priority,
+            lastmod: route.updated_at ? new Date(route.updated_at).toISOString() : undefined
+          });
         }
 
         if (lang === 'es' && route.url_es) {
-          videoLinks.push({ url: `https://${hostname}/es/video/${route.url_es}`, changefreq: 'daily', priority: 0.8 });
+          videoLinks.push({ 
+            url: `https://${hostname}/es/video/${route.url_es}`, 
+            changefreq: changefreq, 
+            priority: priority,
+            lastmod: route.updated_at ? new Date(route.updated_at).toISOString() : undefined
+          });
         }
 
         return videoLinks;

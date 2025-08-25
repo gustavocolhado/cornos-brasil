@@ -90,7 +90,7 @@ export default function Header() {
         {/* Desktop Header */}
         <div className="hidden lg:block">
           {/* Logo Section */}
-          <div className="flex items-center justify-between py-4">
+          <div className="flex items-center justify-between">
             <Logo />
             
             {/* Search Bar */}

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthSession } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth.config'
 import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic';
 
 interface Activity {
   id: string
@@ -18,7 +21,7 @@ interface Activity {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })

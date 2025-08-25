@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth.config'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic';
+
 // Função para construir URLs completas
 function buildMediaUrl(url: string | null): string | null {
   if (!url) return null
@@ -40,9 +42,9 @@ function processVideos(videos: any[]) {
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
+    const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '12')
+    const limit = parseInt(searchParams.get('limit') || '20')
     const filter = searchParams.get('filter') || 'recent'
     const search = searchParams.get('search') || ''
     const category = searchParams.get('category') || ''

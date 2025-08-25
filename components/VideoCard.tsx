@@ -156,7 +156,7 @@ export default function VideoCard({
         }}
       />
       
-      <div className="relative aspect-video theme-card rounded-lg overflow-hidden">
+      <div className="relative aspect-video theme-card overflow-hidden">
         {/* Trailer (se iframe e mouse sobre) */}
         {showTrailer && isIframe && trailerUrl && (
           <div className="absolute inset-0 z-10">

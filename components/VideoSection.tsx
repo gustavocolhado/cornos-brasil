@@ -28,7 +28,7 @@ export default function VideoSection() {
 
   const { videos, pagination, loading, error, refetch, forceRefetch } = useVideos({
     page: currentPage,
-    limit: 20,
+    limit: 50,
     filter: effectiveFilter,
     category: effectiveCategory,
     isPremium: isPremium
@@ -142,7 +142,7 @@ export default function VideoSection() {
       )}
 
       {/* Video Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1">
+      <div className="grid grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1">
         {videos.map((video) => (
           <VideoCard
             key={video.id}

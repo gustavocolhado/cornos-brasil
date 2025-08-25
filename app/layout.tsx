@@ -89,6 +89,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <link rel="search" type="application/opensearchdescription+xml" title="CORNOS BRASIL" href="/opensearch.xml" />
         <Script
           id="microsoft-clarity"
           strategy="afterInteractive"
