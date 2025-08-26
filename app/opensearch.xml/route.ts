@@ -4,8 +4,8 @@ export async function GET() {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
   <ShortName>CORNOS BRASIL</ShortName>
-  <Description>Pesquise videos porno amador brasileiro no CORNOS BRASIL</Description>
-  <Tags>videos porno, porno amador, videos de corno, sexo amador</Tags>
+  <Description>Pesquise videos de corno, porno brasil, marido corno e videos porno no CORNOS BRASIL</Description>
+  <Tags>videos de corno, porno brasil, marido corno, videos porno, pono, cornos videos, vídeos cornos, videoporno corno, corno vídeo, vídeos corninhos, cornos reais, porno amador, sexo amador, porno caseiro, videos caseiros, cornos caseiros, maridos cornos, esposa corno, mulher corno</Tags>
   <Contact>admin@cornosbrasil.com</Contact>
   <Url type="application/opensearchdescription+xml" rel="self" template="https://cornosbrasil.com/opensearch.xml"/>
   <Url type="text/html" rel="results" template="https://cornosbrasil.com/search?q={searchTerms}"/>
@@ -13,7 +13,7 @@ export async function GET() {
   <LongName>CORNOS BRASIL - Videos Porno de Sexo Amador</LongName>
   <Image height="16" width="16" type="image/x-icon">https://cornosbrasil.com/favicon.ico</Image>
   <Image height="64" width="64" type="image/png">https://cornosbrasil.com/imgs/logo.png</Image>
-  <Query role="example" searchTerms="videos porno amador"/>
+  <Query role="example" searchTerms="videos de corno"/>
   <Developer>CORNOS BRASIL</Developer>
   <Attribution>Copyright 2024 CORNOS BRASIL</Attribution>
   <SyndicationRight>open</SyndicationRight>

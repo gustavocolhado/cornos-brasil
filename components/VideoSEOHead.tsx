@@ -34,8 +34,8 @@ export default function VideoSEOHead({
   noIndex = false
 }: VideoSEOHeadProps) {
   const fullTitle = title.includes('CORNOS BRASIL') ? title : `${title} | CORNOS BRASIL`
-  const fullDescription = description || `Assista ${title} - Videos porno amador brasileiro no CORNOS BRASIL. ${creatorName} apresenta este video de ${category.join(', ')}.`
-  const keywords = [...tags, ...category, 'videos porno', 'porno amador', 'videos de corno', 'cornos brasil', 'sexo amador']
+  const fullDescription = description || `Assista ${title} - Videos de corno e porno brasil no CORNOS BRASIL. ${creatorName} apresenta este marido corno de ${category.join(', ')}.`
+  const keywords = [...tags, ...category, 'videos de corno', 'porno brasil', 'marido corno', 'videos porno', 'pono', 'cornos videos', 'vídeos cornos', 'videoporno corno', 'corno vídeo', 'vídeos corninhos', 'cornos reais', 'porno amador', 'cornos brasil', 'sexo amador', 'corno videos', 'videos corno', 'porno caseiro', 'videos caseiros', 'cornos caseiros', 'maridos cornos', 'esposa corno', 'mulher corno']
   const canonicalUrl = canonical || `https://cornosbrasil.com/video/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   
   // Converter duração para formato ISO 8601

@@ -48,6 +48,11 @@ export async function GET(request: Request) {
     // Links estáticos do sitemap
     const staticLinks = [
       { url: '/', changefreq: 'daily', priority: 1.0 },
+      { url: '/cornos-videos', changefreq: 'daily', priority: 0.95 },
+      { url: '/videos-de-corno', changefreq: 'daily', priority: 0.95 },
+      { url: '/porno-brasil', changefreq: 'daily', priority: 0.95 },
+      { url: '/marido-corno', changefreq: 'daily', priority: 0.95 },
+      { url: '/tags', changefreq: 'daily', priority: 0.9 },
       { url: '/videos', changefreq: 'hourly', priority: 0.9 },
       { url: '/search', changefreq: 'daily', priority: 0.8 },
       { url: '/creators', changefreq: 'daily', priority: 0.8 },
@@ -136,9 +141,9 @@ export async function GET(request: Request) {
 
       // Links para tags
       const tagLinks = tags.map((tag) => ({
-        url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/tag/${tag.slug}`,
+        url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/tags/${tag.slug}`,
         changefreq: 'weekly',
-        priority: 0.6,
+        priority: 0.7,
       }));
 
       // Combina todos os links (estáticos, dinâmicos, categorias e tags)

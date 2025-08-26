@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       xml += '    <video:video>\n';
       xml += `      <video:thumbnail_loc>https://${hostname}/thumbnails/${video.url}.jpg</video:thumbnail_loc>\n`;
       xml += `      <video:title>${(video.title || 'Video').replace(/[<>&'"]/g, '')}</video:title>\n`;
-      xml += `      <video:description>Assista ${video.title || 'Video'} - Videos porno amador brasileiro no CORNOS BRASIL</video:description>\n`;
+      xml += `      <video:description>Assista ${video.title || 'Video'} - Videos de corno e porno brasil no CORNOS BRASIL. Marido corno e pono de qualidade.</video:description>\n`;
       xml += '      <video:content_loc>https://cornosbrasil.com/api/proxy/video/' + video.url + '</video:content_loc>\n';
       xml += '      <video:duration>120</video:duration>\n';
       xml += '      <video:rating>4.5</video:rating>\n';

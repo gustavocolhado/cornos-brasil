@@ -62,3 +62,18 @@ export interface Pagination {
   totalPages: number
   hasMore: boolean
 }
+
+export interface VideoData {
+  id: string
+  title: string
+  description: string
+  url: string
+  viewCount: number
+  likesCount: number
+  thumbnailUrl: string
+  duration: string
+  creator: string
+  category: string[]
+  tags: string[]
+  uploadTime: string
+}
