@@ -10,6 +10,7 @@ import SEOHead from '@/components/SEOHead'
 import VideoCard from '@/components/VideoCard'
 import { useVideos } from '@/hooks/useVideos'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
+import { useAnalytics } from '@/hooks/useAnalytics'
 import Pagination from '@/components/Pagination'
 import { formatDuration } from '@/utils/formatDuration'
 
@@ -17,6 +18,7 @@ export default function SearchPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isPremium } = usePremiumStatus()
+  const analytics = useAnalytics()
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState<'recent' | 'popular' | 'liked'>('recent')
@@ -40,11 +42,31 @@ export default function SearchPage() {
     isPremium
   })
 
+  // Track search results when videos are loaded
+  useEffect(() => {
+    if (searchTerm && videos && !loading) {
+      analytics.trackCustomEvent('search_results', {
+        search_term: searchTerm,
+        results_count: pagination?.total || videos.length,
+        current_page: currentPage,
+        filter: filter
+      })
+    }
+  }, [searchTerm, videos, loading, pagination, currentPage, filter, analytics])
+
 
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchTerm.trim()) {
+      // Track search event
+      analytics.trackSearch(searchTerm.trim(), 0) // Results count will be updated when videos load
+      analytics.trackCustomEvent('search_performed', {
+        search_term: searchTerm.trim(),
+        search_type: 'manual',
+        page: 'search'
+      })
+      
       router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`)
     }
   }

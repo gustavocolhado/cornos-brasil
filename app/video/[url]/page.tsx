@@ -26,6 +26,7 @@ import VideoBreadcrumbs from '@/components/VideoBreadcrumbs'
 import { useRelatedVideos } from '@/hooks/useRelatedVideos'
 import { useVideoActions } from '@/hooks/useVideoActions'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
+import { useAnalytics } from '@/hooks/useAnalytics'
 import AdIframe300x250 from '@/components/ads/300x250'
 import AdIframe728x90 from '@/components/ads/728x90'
 import AdIframe300x100 from '@/components/ads/300x100'
@@ -61,6 +62,7 @@ export default function VideoPage() {
   const videoUrl = params.url as string
   const { data: session } = useSession()
   const { isPremium } = usePremiumStatus()
+  const analytics = useAnalytics()
   
   const [video, setVideo] = useState<VideoData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,6 +111,17 @@ export default function VideoPage() {
         const videoData = await response.json()
         setVideo(videoData)
         setCurrentLikesCount(videoData.likesCount || 0)
+        
+        // Track video view
+        analytics.trackCustomEvent('video_view', {
+          video_id: videoData.id,
+          video_title: videoData.title,
+          video_url: videoData.url,
+          category: videoData.category,
+          creator: videoData.creator,
+          premium: videoData.premium,
+          user_premium: session?.user?.premium || false
+        })
         
         // Verificar se o vídeo é premium e o usuário não é premium
         // Aguardar o carregamento da sessão antes de verificar
@@ -173,6 +186,14 @@ export default function VideoPage() {
       await toggleLike()
       // Atualizar contador de likes
       setCurrentLikesCount(prev => isLiked ? prev - 1 : prev + 1)
+      
+      // Track like event
+      analytics.trackCustomEvent('video_like', {
+        video_id: video?.id,
+        video_title: video?.title,
+        action: isLiked ? 'unlike' : 'like',
+        user_premium: session?.user?.premium || false
+      })
     } catch (error) {
       console.error('Erro ao curtir vídeo:', error)
       alert('Erro ao curtir vídeo. Tente novamente.')
@@ -206,6 +227,14 @@ export default function VideoPage() {
         throw new Error(errorData.error || 'Erro ao baixar vídeo')
       }
 
+      // Track download attempt
+      analytics.trackCustomEvent('video_download', {
+        video_id: video.id,
+        video_title: video.title,
+        user_premium: session?.user?.premium || false,
+        download_type: 'premium'
+      })
+      
       // Verificar se é um redirecionamento ou resposta JSON
       if (response.redirected) {
         // É um redirecionamento para download direto
@@ -271,6 +300,14 @@ export default function VideoPage() {
 
     try {
       await toggleFavorite()
+      
+      // Track favorite event
+      analytics.trackCustomEvent('video_favorite', {
+        video_id: video?.id,
+        video_title: video?.title,
+        action: isFavorited ? 'unfavorite' : 'favorite',
+        user_premium: session?.user?.premium || false
+      })
     } catch (error) {
       console.error('Erro ao favoritar vídeo:', error)
       alert('Erro ao favoritar vídeo. Tente novamente.')
@@ -595,14 +632,14 @@ export default function VideoPage() {
               )}
 
               {/* Vídeos Relacionados */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mt-4">
+              <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mt-4 mb-6">
                 <h3 className="text-lg font-bold text-theme-primary mb-4">Vídeos Relacionados</h3>
                 {relatedLoading ? (
                   <div className="flex justify-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin text-theme-primary" />
                   </div>
                 ) : relatedVideos.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1">
                     {relatedVideos.slice(0, 20).map((relatedVideo) => (
                       <VideoCard
                         key={relatedVideo.id}
@@ -629,7 +666,7 @@ export default function VideoPage() {
 
             {/* Sidebar com Anúncios Desktop */}
             {!isPremium && (
-              <div className="hidden lg:block lg:w-80 space-y-4">
+              <div className="hidden lg:block lg:w-80 space-y-4 mt-4">
                 {/* Anúncio 1 - 300x250 */}
                 <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
                   <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
