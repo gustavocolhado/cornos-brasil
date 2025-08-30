@@ -13,6 +13,8 @@ interface PixData {
   qr_code: string
   qr_code_base64: string
   expires_at: string
+  payment_id?: string
+  provider?: string
 }
 
 export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPaymentProps) {
@@ -27,6 +29,8 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
   useEffect(() => {
     const fetchPixData = async () => {
       try {
+        console.log('🎯 PixPayment - Iniciando busca de dados PIX para preferenceId:', preferenceId)
+        
         const response = await fetch('/api/premium/create-pix', {
           method: 'POST',
           headers: {
@@ -40,7 +44,27 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
         }
 
         const data = await response.json()
+        console.log('📊 Dados PIX recebidos:', data)
+        console.log('🔍 Verificando campos do QR Code:', {
+          hasQRCode: !!data.qr_code,
+          hasQRCodeBase64: !!data.qr_code_base64,
+          qrCodeLength: data.qr_code?.length,
+          qrCodeBase64Length: data.qr_code_base64?.length,
+          qrCodeType: typeof data.qr_code,
+          qrCodeBase64Type: typeof data.qr_code_base64,
+          provider: data.provider,
+          qrCodeBase64Start: data.qr_code_base64?.substring(0, 50) + '...',
+          fullData: data
+        })
         setPixData(data)
+        
+        // Log quando pixData é definido
+        console.log('🎯 PixPayment - Dados definidos:', {
+          hasQRCode: !!data.qr_code,
+          hasQRCodeBase64: !!data.qr_code_base64,
+          qrCodeBase64Length: data.qr_code_base64?.length,
+          provider: data.provider
+        })
         
         // Calcular tempo restante
         const expiresAt = new Date(data.expires_at).getTime()
@@ -48,6 +72,7 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
         const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000))
         setTimeLeft(remaining)
       } catch (err) {
+        console.error('❌ Erro ao buscar dados PIX:', err)
         setError(err instanceof Error ? err.message : 'Erro desconhecido')
       } finally {
         setLoading(false)
@@ -61,9 +86,16 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
   useEffect(() => {
     if (!preferenceId || paymentStatus !== 'pending') return
 
+    let checkCount = 0
+    const maxChecks = 60 // Máximo 5 minutos (60 * 5 segundos)
+
     const checkPaymentStatus = async () => {
       try {
-        const response = await fetch('/api/premium/check-payment-status', {
+        console.log(`🔍 Verificando status do pagamento (tentativa ${checkCount + 1}/${maxChecks})`)
+        console.log(`🔍 PreferenceId sendo verificado:`, preferenceId)
+        
+        // Primeiro, verificar o status do pagamento específico
+        const paymentResponse = await fetch('/api/premium/check-payment-status', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -71,22 +103,71 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
           body: JSON.stringify({ preferenceId }),
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          if (data.status === 'approved') {
+        if (paymentResponse.ok) {
+          const paymentData = await paymentResponse.json()
+          console.log('📊 Status do pagamento:', paymentData)
+          
+          if (paymentData.status === 'approved' || paymentData.status === 'paid') {
+            console.log('✅ Pagamento aprovado! Redirecionando...')
             setPaymentStatus('approved')
-            setTimeout(() => onSuccess(), 2000)
-          } else if (data.status === 'rejected') {
+            setTimeout(() => {
+              // Redirecionar para a página de sucesso com o payment_id
+              window.location.href = `/premium/success?payment_id=${pixData?.payment_id || preferenceId}`
+            }, 2000)
+            return
+          } else if (paymentData.status === 'rejected' || paymentData.status === 'cancelled') {
+            console.log('❌ Pagamento rejeitado')
             setPaymentStatus('rejected')
+            return
+          } else {
+            console.log('⏳ Pagamento ainda pendente:', paymentData.status)
           }
+        } else {
+          console.log('❌ Erro na resposta da API de verificação:', paymentResponse.status)
+        }
+
+        // Como fallback, verificar o status premium do usuário
+        // Mas só considerar se o pagamento específico foi processado
+        const userResponse = await fetch('/api/premium/check-user-status')
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          console.log('👤 Status do usuário:', userData)
+          
+          // Só considerar aprovado se o usuário tem premium E o pagamento foi processado recentemente
+          if (userData.isActive && userData.paymentDate) {
+            const paymentDate = new Date(userData.paymentDate)
+            const now = new Date()
+            const timeDiff = now.getTime() - paymentDate.getTime()
+            const minutesDiff = timeDiff / (1000 * 60)
+            
+            // Só considerar se o pagamento foi feito nos últimos 10 minutos
+            if (minutesDiff < 10) {
+              console.log('✅ Usuário tem premium ativo e pagamento recente! Redirecionando...')
+              setPaymentStatus('approved')
+              setTimeout(() => {
+                // Redirecionar para a página de sucesso com o payment_id
+                window.location.href = `/premium/success?payment_id=${pixData?.payment_id || preferenceId}`
+              }, 2000)
+              return
+            }
+          }
+        }
+        
+        checkCount++
+        if (checkCount >= maxChecks) {
+          console.log('⏰ Tempo limite de verificação atingido')
+          return
         }
       } catch (error) {
         console.error('Erro ao verificar status:', error)
+        checkCount++
       }
     }
 
-    // Verificar a cada 5 segundos
+    // Verificar imediatamente e depois a cada 5 segundos
+    checkPaymentStatus()
     const interval = setInterval(checkPaymentStatus, 5000)
+    
     return () => clearInterval(interval)
   }, [preferenceId, paymentStatus, onSuccess])
 
@@ -223,11 +304,53 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
       {/* QR Code */}
       <div className="flex justify-center mb-8">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 shadow-lg">
-          <img
-            src={`data:image/png;base64,${pixData.qr_code_base64}`}
-            alt="QR Code PIX"
-            className="w-56 h-56"
-          />
+          {(() => {
+            console.log('🎨 Renderizando QR Code:', {
+              hasQRCodeBase64: !!pixData.qr_code_base64,
+              qrCodeBase64Length: pixData.qr_code_base64?.length,
+              qrCodeBase64Start: pixData.qr_code_base64?.substring(0, 30) + '...'
+            })
+            
+                         if (pixData.qr_code_base64) {
+               // Verificar se o base64 já tem o prefixo data:image/png;base64,
+               const base64Data = pixData.qr_code_base64.startsWith('data:image/png;base64,') 
+                 ? pixData.qr_code_base64 
+                 : `data:image/png;base64,${pixData.qr_code_base64}`
+               
+               console.log('🔧 Base64 processado:', {
+                 original: pixData.qr_code_base64.substring(0, 50) + '...',
+                 processed: base64Data.substring(0, 50) + '...',
+                 hasPrefix: pixData.qr_code_base64.startsWith('data:image/png;base64,')
+               })
+               
+               return (
+                 <img
+                   src={base64Data}
+                   alt="QR Code PIX"
+                   className="w-56 h-56"
+                   onLoad={() => console.log('✅ QR Code carregado com sucesso')}
+                   onError={(e) => {
+                     console.error('❌ Erro ao carregar QR Code:', e)
+                     console.error('❌ Dados do QR Code:', {
+                       length: pixData.qr_code_base64?.length,
+                       start: pixData.qr_code_base64?.substring(0, 50),
+                       processedLength: base64Data?.length
+                     })
+                     e.currentTarget.style.display = 'none'
+                   }}
+                 />
+               )
+             } else {
+              console.log('❌ QR Code base64 não disponível')
+              return (
+                <div className="w-56 h-56 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <p className="text-gray-500 dark:text-gray-400 text-center">
+                    QR Code não disponível
+                  </p>
+                </div>
+              )
+            }
+          })()}
         </div>
       </div>
 
@@ -239,13 +362,14 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
         <div className="flex">
           <input
             type="text"
-            value={pixData.qr_code}
+            value={pixData.qr_code || 'Código PIX não disponível'}
             readOnly
             className="flex-1 px-4 py-3 border border-theme-border-primary rounded-l-xl bg-theme-hover text-sm font-mono text-theme-primary"
           />
           <button
             onClick={copyPixCode}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-r-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg"
+            disabled={!pixData.qr_code}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-r-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
           </button>
@@ -254,6 +378,12 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
           <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm mt-2">
             <Check className="w-4 h-4" />
             <span className="font-medium">Código copiado!</span>
+          </div>
+        )}
+        {!pixData.qr_code && (
+          <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-sm mt-2">
+            <AlertCircle className="w-4 h-4" />
+            <span className="font-medium">Código PIX não foi gerado</span>
           </div>
         )}
       </div>
@@ -281,8 +411,12 @@ export default function PixPayment({ preferenceId, onSuccess, onCancel }: PixPay
             <span className="font-medium">Aguardando pagamento...</span>
           </div>
           <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
-            Verificando status automaticamente
+            Verificando status automaticamente a cada 5 segundos
           </p>
+          <div className="mt-3 text-xs text-blue-600 dark:text-blue-400">
+            <p>💡 <strong>Dica:</strong> Após fazer o pagamento, aguarde alguns segundos.</p>
+            <p>O sistema detectará automaticamente quando o pagamento for confirmado.</p>
+          </div>
         </div>
       </div>
 

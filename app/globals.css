@@ -35,6 +35,10 @@
   --overlay-dark: rgba(0, 0, 0, 0.75);
   --overlay-light: rgba(255, 255, 255, 0.75);
   --overlay-red: rgba(220, 38, 38, 0.1);
+
+  /* Domain-specific colors (will be set dynamically) */
+  --primary-color: #e74c3c;
+  --primary-color-hover: #c0392b;
 }
 
 /* ========================================

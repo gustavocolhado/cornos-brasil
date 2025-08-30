@@ -10,7 +10,6 @@ import SEOHead from '@/components/SEOHead'
 import VideoCard from '@/components/VideoCard'
 import { useVideos } from '@/hooks/useVideos'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
-import { useAnalytics } from '@/hooks/useAnalytics'
 import Pagination from '@/components/Pagination'
 import { formatDuration } from '@/utils/formatDuration'
 
@@ -18,7 +17,6 @@ export default function SearchPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isPremium } = usePremiumStatus()
-  const analytics = useAnalytics()
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState<'recent' | 'popular' | 'liked'>('recent')
@@ -38,35 +36,15 @@ export default function SearchPage() {
     search: searchTerm,
     filter,
     page: currentPage,
-    limit: 12,
+    limit: 50,
     isPremium
   })
-
-  // Track search results when videos are loaded
-  useEffect(() => {
-    if (searchTerm && videos && !loading) {
-      analytics.trackCustomEvent('search_results', {
-        search_term: searchTerm,
-        results_count: pagination?.total || videos.length,
-        current_page: currentPage,
-        filter: filter
-      })
-    }
-  }, [searchTerm, videos, loading, pagination, currentPage, filter, analytics])
 
 
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchTerm.trim()) {
-      // Track search event
-      analytics.trackSearch(searchTerm.trim(), 0) // Results count will be updated when videos load
-      analytics.trackCustomEvent('search_performed', {
-        search_term: searchTerm.trim(),
-        search_type: 'manual',
-        page: 'search'
-      })
-      
       router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`)
     }
   }
@@ -106,10 +84,10 @@ export default function SearchPage() {
         <Header />
         
         <div className="min-h-screen bg-gradient-to-br from-theme-background via-theme-card to-theme-primary/5">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container-content mx-auto px-4 py-8">
             
             {/* Header da Busca */}
-            <div className="mb-8">
+            <div className="mb-8 mt-8">
               <h1 className="text-3xl font-bold text-theme-primary mb-4">
                 {searchTerm ? `Resultados para: "${searchTerm}"` : 'Buscar Vídeos'}
               </h1>
@@ -264,7 +242,7 @@ export default function SearchPage() {
               </div>
             ) : (
               /* Resultados da busca */
-              <div>
+              <div className="mb-8">
                 {loading ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="text-center">
@@ -303,7 +281,7 @@ export default function SearchPage() {
                 ) : (
                   <>
                     {/* Grid de Vídeos */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 mb-8">
                       {videos.map((video) => (
                         <VideoCard 
                           key={video.id} 
@@ -337,7 +315,6 @@ export default function SearchPage() {
           </div>
         </div>
         
-        <Footer />
       </Layout>
     </>
   )

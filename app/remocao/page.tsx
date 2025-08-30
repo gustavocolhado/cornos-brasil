@@ -417,6 +417,7 @@ function RemocaoPageContent() {
           </div>
         </div>
         
+        <Footer />
       </Layout>
     </>
   )
@@ -433,6 +434,7 @@ export default function RemocaoPage() {
             <p className="text-theme-primary">Carregando...</p>
           </div>
         </div>
+        <Footer />
       </Layout>
     }>
       <RemocaoPageContent />

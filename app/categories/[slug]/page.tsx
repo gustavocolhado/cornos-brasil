@@ -12,7 +12,6 @@ import { ArrowLeft, Grid } from 'lucide-react'
 import Link from 'next/link'
 import { useVideos } from '@/hooks/useVideos'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
-import { useAnalytics } from '@/hooks/useAnalytics'
 import { formatDuration } from '@/utils/formatDuration'
 
 interface Category {
@@ -26,7 +25,6 @@ interface Category {
 export default function CategoryPage() {
   const params = useParams()
   const slug = params.slug as string
-  const analytics = useAnalytics()
   const [category, setCategory] = useState<Category | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -59,15 +57,6 @@ export default function CategoryPage() {
       
       console.log('✅ Categoria encontrada:', foundCategory)
       setCategory(foundCategory)
-      
-      // Track category view
-      analytics.trackCategoryView(slug, foundCategory.name)
-      analytics.trackCustomEvent('category_page_view', {
-        category_slug: slug,
-        category_name: foundCategory.name,
-        category_id: foundCategory.id,
-        videos_count: foundCategory.qtd
-      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       console.error('Erro ao buscar categoria:', err)

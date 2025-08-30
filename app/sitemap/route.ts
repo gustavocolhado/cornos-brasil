@@ -1,28 +1,47 @@
 import { NextResponse } from 'next/server';
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { prisma } from '@/lib/prisma';
+import { getDomainConfig } from '@/config/domains';
 
+// Forçar renderização dinâmica
 export const dynamic = 'force-dynamic';
 
-const domains = [
-  { domain: 'www.cornosbrasil.com' },
-  { domain: 'cornosbrasil.com' },
-  { domain: 'localhost:3000' }
+// Lista de todos os domínios suportados
+const supportedDomains = [
+  'cornofilmando.com',
+  'cornomanso.com.br',
+  'cornoplay.com',
+  'cornosbrasil.com',
+  'cornostv.com',
+  'cornosvip.com',
+  'cornotube.com',
+  'cornovideos.com',
+  'esposadecorno.com',
+  'esposagozando.com',
+  'esposasafada.com',
+  'maridocorno.com',
+  'mulherdecorno.com',
+  'mulherdocorno.com',
+  'videosdecorno.com',
+  'localhost:3000'
 ];
 
-const languages = ['pt', 'en', 'es']; // Idiomas suportados
+// Apenas português brasileiro
+const languages = ['pt'];
 
 export async function GET(request: Request) {
   try {
     // Obtém o hostname da URL da requisição (sem protocolo e sem caminho)
     const hostname = request.headers.get('x-forwarded-host') || new URL(request.url).hostname;
 
-    // Verificar se o domínio acessado é um dos domínios conhecidos
-    const isKnownDomain = domains.some((d) => d.domain === hostname) || hostname === 'localhost';
+    // Verificar se o domínio acessado é um dos domínios suportados
+    const isKnownDomain = supportedDomains.includes(hostname) || hostname === 'localhost';
 
     if (!isKnownDomain) {
       return new NextResponse('Domínio desconhecido.', { status: 400 });
     }
+
+    // Usar o PrismaClient padrão
 
     // Cria o stream do sitemap com o domínio específico
     const sitemapStream = new SitemapStream({ hostname: `https://${hostname}` });
@@ -48,11 +67,6 @@ export async function GET(request: Request) {
     // Links estáticos do sitemap
     const staticLinks = [
       { url: '/', changefreq: 'daily', priority: 1.0 },
-      { url: '/cornos-videos', changefreq: 'daily', priority: 0.95 },
-      { url: '/videos-de-corno', changefreq: 'daily', priority: 0.95 },
-      { url: '/porno-brasil', changefreq: 'daily', priority: 0.95 },
-      { url: '/marido-corno', changefreq: 'daily', priority: 0.95 },
-      { url: '/tags', changefreq: 'daily', priority: 0.9 },
       { url: '/videos', changefreq: 'hourly', priority: 0.9 },
       { url: '/search', changefreq: 'daily', priority: 0.8 },
       { url: '/creators', changefreq: 'daily', priority: 0.8 },
@@ -80,7 +94,7 @@ export async function GET(request: Request) {
       }));
 
       // Links dinâmicos (vídeos) com prioridades baseadas na categoria
-      const videoLinks = dynamicRoutes.flatMap((route) => {
+      const videoLinks = dynamicRoutes.flatMap((route: any) => {
         // Determinar prioridade baseada na categoria
         let priority = 0.8;
         if (route.category && route.category.includes('VIP')) {
@@ -133,17 +147,17 @@ export async function GET(request: Request) {
       });
 
       // Links para categorias
-      const categoryLinks = categories.map((category) => ({
+      const categoryLinks = categories.map((category: any) => ({
         url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/categories/${category.slug}`,
         changefreq: 'weekly',
         priority: 0.6,
       }));
 
       // Links para tags
-      const tagLinks = tags.map((tag) => ({
-        url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/tags/${tag.slug}`,
+      const tagLinks = tags.map((tag: any) => ({
+        url: `https://${hostname}${lang !== 'pt' ? `/${lang}` : ''}/tag/${tag.slug}`,
         changefreq: 'weekly',
-        priority: 0.7,
+        priority: 0.6,
       }));
 
       // Combina todos os links (estáticos, dinâmicos, categorias e tags)

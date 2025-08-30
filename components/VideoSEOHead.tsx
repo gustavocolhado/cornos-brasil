@@ -1,6 +1,7 @@
 'use client'
 
 import Head from 'next/head'
+import { useDomainContext } from '@/contexts/DomainContext'
 
 interface VideoSEOHeadProps {
   title: string
@@ -33,10 +34,16 @@ export default function VideoSEOHead({
   canonical,
   noIndex = false
 }: VideoSEOHeadProps) {
-  const fullTitle = title.includes('CORNOS BRASIL') ? title : `${title} | CORNOS BRASIL`
-  const fullDescription = description || `Assista ${title} - Videos de corno e porno brasil no CORNOS BRASIL. ${creatorName} apresenta este marido corno de ${category.join(', ')}.`
-  const keywords = [...tags, ...category, 'videos de corno', 'porno brasil', 'marido corno', 'videos porno', 'pono', 'cornos videos', 'vídeos cornos', 'videoporno corno', 'corno vídeo', 'vídeos corninhos', 'cornos reais', 'porno amador', 'cornos brasil', 'sexo amador', 'corno videos', 'videos corno', 'porno caseiro', 'videos caseiros', 'cornos caseiros', 'maridos cornos', 'esposa corno', 'mulher corno']
-  const canonicalUrl = canonical || `https://cornosbrasil.com/video/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  const { domainConfig, isLoading } = useDomainContext()
+
+  // Fallback para quando o domínio ainda não foi carregado
+  const siteName = isLoading || !domainConfig ? 'CORNOS BRASIL' : domainConfig.siteName
+  const canonicalDomain = isLoading || !domainConfig ? 'https://cornosbrasil.com' : domainConfig.canonical
+
+  const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`
+  const fullDescription = description || `Assista ${title} - Corno videos e videos de corno brasileiros. Porno amador real no ${siteName}. ${creatorName} apresenta este video de ${category.join(', ')}.`
+  const keywords = [...tags, ...category, 'corno videos', 'videos de corno', 'porno amador', 'cornos videos', 'sexo amador', siteName.toLowerCase()]
+  const canonicalUrl = canonical || `${canonicalDomain}/video/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   
   // Converter duração para formato ISO 8601
   const parseDuration = (duration: string) => {
@@ -55,7 +62,7 @@ export default function VideoSEOHead({
       <title>{fullTitle}</title>
       <meta name="description" content={fullDescription} />
       <meta name="keywords" content={keywords.join(', ')} />
-      <meta name="author" content="CORNOS BRASIL" />
+      <meta name="author" content={siteName} />
       <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
       
       {/* Canonical URL */}
@@ -65,8 +72,8 @@ export default function VideoSEOHead({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={fullDescription} />
       <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content="CORNOS BRASIL" />
-      <meta property="og:image" content={thumbnailUrl.startsWith('http') ? thumbnailUrl : `https://cornosbrasil.com${thumbnailUrl}`} />
+      <meta property="og:site_name" content={siteName} />
+             <meta property="og:image" content={thumbnailUrl.startsWith('http') ? thumbnailUrl : `${canonicalDomain}${thumbnailUrl}`} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:type" content="video" />
@@ -82,7 +89,7 @@ export default function VideoSEOHead({
       <meta name="twitter:card" content="player" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={fullDescription} />
-      <meta name="twitter:image" content={thumbnailUrl.startsWith('http') ? thumbnailUrl : `https://cornosbrasil.com${thumbnailUrl}`} />
+             <meta name="twitter:image" content={thumbnailUrl.startsWith('http') ? thumbnailUrl : `${canonicalDomain}${thumbnailUrl}`} />
       <meta name="twitter:player" content={videoUrl} />
       <meta name="twitter:player:width" content="1280" />
       <meta name="twitter:player:height" content="720" />
@@ -104,7 +111,7 @@ export default function VideoSEOHead({
             "@type": "VideoObject",
             "name": title,
             "description": fullDescription,
-            "thumbnailUrl": thumbnailUrl.startsWith('http') ? thumbnailUrl : `https://cornosbrasil.com${thumbnailUrl}`,
+                         "thumbnailUrl": thumbnailUrl.startsWith('http') ? thumbnailUrl : `${canonicalDomain}${thumbnailUrl}`,
             "uploadDate": uploadDate,
             "duration": parseDuration(duration),
             "contentUrl": videoUrl,
@@ -125,11 +132,11 @@ export default function VideoSEOHead({
               "@type": "Person",
               "name": creatorName
             },
-            "publisher": {
-              "@type": "Organization",
-              "name": "CORNOS BRASIL",
-              "url": "https://cornosbrasil.com"
-            },
+                         "publisher": {
+               "@type": "Organization",
+               "name": siteName,
+               "url": canonicalDomain
+             },
             "genre": category,
             "keywords": keywords.join(', '),
             "inLanguage": "pt-BR",
@@ -147,24 +154,24 @@ export default function VideoSEOHead({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": "https://cornosbrasil.com"
-              },
-              {
-                "@type": "ListItem", 
-                "position": 2,
-                "name": "Vídeos",
-                "item": "https://cornosbrasil.com/videos"
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": category[0] || "Categoria",
-                "item": `https://cornosbrasil.com/categories/${category[0]?.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
-              },
+                             {
+                 "@type": "ListItem",
+                 "position": 1,
+                 "name": "Home",
+                 "item": canonicalDomain
+               },
+               {
+                 "@type": "ListItem", 
+                 "position": 2,
+                 "name": "Vídeos",
+                 "item": `${canonicalDomain}/videos`
+               },
+               {
+                 "@type": "ListItem",
+                 "position": 3,
+                 "name": category[0] || "Categoria",
+                 "item": `${canonicalDomain}/categories/${category[0]?.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+               },
               {
                 "@type": "ListItem",
                 "position": 4,
@@ -191,4 +198,3 @@ export default function VideoSEOHead({
     </Head>
   )
 }
-

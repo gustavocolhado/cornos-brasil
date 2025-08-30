@@ -17,8 +17,7 @@ export default function robots(): MetadataRoute.Robots {
     },
     sitemap: [
       'https://cornosbrasil.com/sitemap.xml',
-      'https://cornosbrasil.com/sitemap/videos',
-      'https://cornosbrasil.com/sitemap/tags'
+      'https://cornosbrasil.com/sitemap.xml/videos'
     ],
   }
 } 

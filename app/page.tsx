@@ -6,6 +6,7 @@ import Creators from '@/components/Creators'
 import VideoSection from '@/components/VideoSection'
 import PremiumBanner from '@/components/PremiumBanner'
 import SEOHead from '@/components/SEOHead'
+
 import { useSession } from 'next-auth/react'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
 import Section from '@/components/Section'
@@ -50,33 +51,23 @@ export default function Home() {
           <Section className="bg-theme-card py-8 px-4">
             <div className="container w-full">
               <h1 className="text-sm font-bold text-theme-primary mb-4">
-                CORNOS BRASIL - Videos de Corno | Porno Brasil | Marido Corno | Videos Porno
+                CORNOS BRASIL - Videos Porno de Sexo Amador
               </h1>
               <div className="prose prose-lg text-theme-secondary">
                 <p className="mb-2 text-xs">
-                  Bem-vindo ao <strong>CORNOS BRASIL</strong>, o melhor site de <strong>videos de corno</strong> e <strong>porno brasil</strong>. 
-                  Aqui você encontra uma vasta coleção de <strong>marido corno</strong>, <strong>videos porno</strong> e 
-                  <strong>pono</strong> de alta qualidade.
+                  Bem-vindo ao <strong>CORNOS BRASIL</strong>, o melhor site de <strong>videos porno amador</strong> do Brasil. 
+                  Aqui você encontra uma vasta coleção de <strong>videos de corno</strong>, <strong>porno amador</strong> e 
+                  <strong>videos porno grátis</strong> de alta qualidade.
                 </p>
                 <p className="mb-2 text-xs">
-                  Nossa plataforma oferece <strong>videos de corno</strong> autênticos, com conteúdo brasileiro 
+                  Nossa plataforma oferece <strong>videos de sexo amador</strong> autênticos, com conteúdo brasileiro 
                   e internacional. Assista <strong>videos porno</strong> sem interrupções e descubra o melhor do 
-                  <strong>porno brasileiro</strong> com <strong>marido corno</strong> reais.
+                  <strong>porno brasileiro</strong>.
                 </p>
                 <p className="mb-2 text-xs">
-                  Explore nossa coleção de <strong>videos porno amador</strong>, <strong>cornos videos</strong> e 
-                  <strong>porno caseiro</strong>. O <strong>CORNOS BRASIL</strong> é sua fonte confiável para <strong>porno grátis </strong> 
-                  e <strong>videos de sexo</strong> de qualidade com <strong>videos de corno</strong> exclusivos.
-                </p>
-                <p className="mb-2 text-xs">
-                  <strong>Marido corno</strong> em ação, <strong>videos porno</strong> amadores e 
-                  <strong>porno brasil</strong> caseiros. Encontre os melhores <strong>cornos caseiros</strong> e 
-                  <strong>videos corno</strong> em nossa plataforma.
-                </p>
-                <p className="mb-2 text-xs">
-                  <strong>Pono</strong> de qualidade premium, <strong>esposa corno</strong> e <strong>mulher corno</strong> 
-                  em situações reais. <strong>Videos caseiros</strong> e <strong>maridos cornos</strong> brasileiros 
-                  em nossa coleção exclusiva.
+                  Explore nossa coleção de <strong>videos porno amador</strong>, <strong>videos de corno</strong> e 
+                  muito mais. O <strong>CORNOS BRASIL</strong> é sua fonte confiável para <strong>porno grátis </strong> 
+                  e <strong>videos de sexo</strong> de qualidade.
                 </p>
               </div>
             </div>

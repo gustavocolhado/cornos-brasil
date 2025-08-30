@@ -29,27 +29,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Buscar pagamento no banco de dados pelo preferenceId
-    const payment = await prisma.payment.findFirst({
+    // Buscar PaymentSession no banco de dados pelo preferenceId
+    // Também buscar pelo ID do PIX que pode estar no preferenceId
+    const paymentSession = await prisma.paymentSession.findFirst({
       where: {
-        preferenceId: preferenceId,
+        OR: [
+          { paymentId: parseInt(preferenceId) },
+          { preferenceId: preferenceId },
+          // Buscar também pelo ID do PIX que pode estar no preferenceId
+          { preferenceId: { contains: preferenceId } }
+        ]
       },
     })
 
-    if (!payment) {
+    if (!paymentSession) {
       return NextResponse.json({
         status: 'pending',
         message: 'Nenhum pagamento encontrado',
       })
     }
 
-    // Retornar o status atual do pagamento no banco
+    // Verificar se o usuário tem acesso premium ativo
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { premium: true, expireDate: true }
+    })
+
+    // Só considerar aprovado se o PaymentSession específico foi pago
+    // Não considerar aprovado apenas por ter premium ativo
+    if (paymentSession.status === 'paid') {
+      return NextResponse.json({
+        status: 'approved',
+        payment_id: paymentSession.paymentId,
+        amount: paymentSession.amount,
+        plan: paymentSession.plan,
+        message: 'Pagamento confirmado',
+        is_verification_only: true
+      })
+    }
+
+    // Retornar o status atual do PaymentSession
     return NextResponse.json({
-      status: payment.status || 'pending',
-      payment_id: payment.paymentId,
-      amount: payment.amount,
-      plan: payment.plan,
-      // Flag para indicar que é apenas verificação
+      status: paymentSession.status || 'pending',
+      payment_id: paymentSession.paymentId,
+      amount: paymentSession.amount,
+      plan: paymentSession.plan,
+      message: paymentSession.status === 'paid' ? 'Pagamento confirmado' : 'Aguardando pagamento',
       is_verification_only: true
     })
 

@@ -33,7 +33,11 @@ module.exports = {
         'text-primary-dark': '#ffffff',
         'text-secondary-dark': '#a3a3a3',
         'text-primary-light': '#000000',
-        'text-secondary-light': '#6b7280'
+        'text-secondary-light': '#6b7280',
+        
+        // Domain-specific colors (will be overridden by CSS custom properties)
+        'domain-primary': 'var(--primary-color, #e74c3c)',
+        'domain-primary-hover': 'var(--primary-color-hover, #c0392b)',
       },
       fontFamily: {
         'sans': ['Roboto', 'system-ui', 'sans-serif']

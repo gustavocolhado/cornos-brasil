@@ -1,6 +1,7 @@
 'use client'
 
 import Head from 'next/head'
+import { useDomainContext } from '@/contexts/DomainContext'
 
 interface SEOHeadProps {
   title?: string
@@ -13,69 +14,68 @@ interface SEOHeadProps {
 }
 
 export default function SEOHead({
-  title = 'CORNOS BRASIL - Videos de Corno | Porno Brasil | Marido Corno | Videos Porno',
-  description = 'Videos de corno, porno brasil, marido corno e videos porno de qualidade. Pono, videos porno amador, porno brasileiro e cornos videos. CORNOS BRASIL - O melhor site de videos porno amador do Brasil.',
-  keywords = [
-    'videos de corno',
-    'porno brasil',
-    'marido corno',
-    'videos porno',
-    'pono',
-    'cornos videos',
-    'vídeos cornos',
-    'videoporno corno', 
-    'corno vídeo',
-    'vídeos corninhos',
-    'cornos reais',
-    'porno amador', 
-    'cornos brasil',
-    'sexo amador',
-    'videos porno grátis',
-    'porno brasileiro',
-    'videos de sexo',
-    'amador porno',
-    'videos porno amador',
-    'porno corno',
-    'videos de sexo amador',
-    'porno grátis',
-    'videos porno brasileiro',
-    'corno videos',
-    'videos corno',
-    'porno caseiro',
-    'videos caseiros',
-    'cornos caseiros',
-    'maridos cornos',
-    'esposa corno',
-    'mulher corno'
-  ] as string[],
-  canonical = 'https://cornosbrasil.com',
-  ogImage = '/imgs/logo.png',
+  title,
+  description,
+  keywords,
+  canonical,
+  ogImage,
   ogType = 'website',
   noIndex = false
 }: SEOHeadProps) {
-  const fullTitle = title.includes('CORNOS BRASIL') ? title : `${title} | CORNOS BRASIL`
+  const { domainConfig, isLoading } = useDomainContext()
+
+  // Use domain config if available, otherwise use props or defaults
+  const finalTitle = title || (domainConfig?.title || 'Corno Videos - Videos de Corno | Porno Amador Brasileiro')
+  const finalDescription = description || (domainConfig?.description || 'Corno videos e videos de corno brasileiros. Porno amador real, videos de corno caseiros, sexo amador brasileiro. O melhor site de corno videos e porno amador do Brasil.')
+  const finalKeywords = keywords || (domainConfig?.keywords || [
+    'corno videos',
+    'videos de corno',
+    'porno amador',
+    'videos porno',
+    'cornos videos',
+    'sexo amador',
+    'videos de corno brasileiros',
+    'porno amador brasileiro',
+    'corno videos brasileiros',
+    'videos de corno caseiros',
+    'porno amador caseiro',
+    'videos de corno real',
+    'sexo amador real',
+    'corno videos grátis',
+    'videos de corno grátis',
+    'porno amador grátis',
+    'cornos brasil',
+    'videos porno amador',
+    'porno brasileiro',
+    'videos de sexo amador'
+  ])
+  const finalCanonical = canonical || (domainConfig?.canonical || 'https://cornosbrasil.com')
+  const finalOgImage = ogImage || (domainConfig?.ogImage || '/imgs/og-cornosbrasil.jpg')
+  const finalSiteName = domainConfig?.siteName || 'CORNOS BRASIL'
+
+  const fullTitle = finalTitle.includes(finalSiteName) ? finalTitle : `${finalTitle} | ${finalSiteName}`
   
   // Handle keywords as string or array
-  const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords
+  const keywordsString = Array.isArray(finalKeywords) ? finalKeywords.join(', ') : finalKeywords
   
   return (
     <Head>
       {/* Basic Meta Tags */}
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      <meta name="description" content={finalDescription} />
       <meta name="keywords" content={keywordsString} />
-      <meta name="author" content="CORNOS BRASIL" />
+      <meta name="author" content={finalSiteName} />
       <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
       
       {/* Canonical URL */}
-      <link rel="canonical" href={canonical} />
+      <link rel="canonical" href={finalCanonical} />
       
       {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:url" content={canonical} />
-      <meta property="og:site_name" content="CORNOS BRASIL" />
-      <meta property="og:image" content={`https://cornosbrasil.com${ogImage}`} />
+      <meta property="og:description" content={finalDescription} />
+      <meta property="og:url" content={finalCanonical} />
+      <meta property="og:site_name" content={finalSiteName} />
+      <meta property="og:image" content={`${finalCanonical}${finalOgImage}`} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:type" content={ogType} />
@@ -84,8 +84,8 @@ export default function SEOHead({
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={`https://cornosbrasil.com${ogImage}`} />
+      <meta name="twitter:description" content={finalDescription} />
+      <meta name="twitter:image" content={`${finalCanonical}${finalOgImage}`} />
       
       {/* Additional SEO */}
       <meta name="language" content="pt-BR" />
@@ -102,18 +102,18 @@ export default function SEOHead({
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            "name": "CORNOS BRASIL",
-            "description": description,
-            "url": "https://cornosbrasil.com",
+            "name": finalSiteName,
+            "description": finalDescription,
+            "url": finalCanonical,
             "potentialAction": {
               "@type": "SearchAction",
-              "target": "https://cornosbrasil.com/videos?search={search_term_string}",
+              "target": `${finalCanonical}/videos?search={search_term_string}`,
               "query-input": "required name=search_term_string"
             },
             "publisher": {
               "@type": "Organization",
-              "name": "CORNOS BRASIL",
-              "url": "https://cornosbrasil.com"
+              "name": finalSiteName,
+              "url": finalCanonical
             }
           })
         }}

@@ -13,8 +13,17 @@ import {
   Heart,
   Star
 } from 'lucide-react'
+import { useDomainContext } from '@/contexts/DomainContext'
 
 export default function Footer() {
+  const { domainConfig, isLoading } = useDomainContext()
+
+  // Fallback para quando o domínio ainda não foi carregado
+  const siteName = isLoading || !domainConfig ? 'Cornos Brasil' : domainConfig.siteName
+  const siteDescription = isLoading || !domainConfig 
+    ? 'A melhor plataforma de vídeos amadores do Brasil. Conteúdo exclusivo e de qualidade para você.'
+    : domainConfig.description
+
   return (
     <footer className="relative bg-gradient-to-br from-theme-card via-theme-card to-theme-primary/10 border-t border-theme-border-primary mt-auto overflow-hidden">
       {/* Background Pattern */}
@@ -36,11 +45,10 @@ export default function Footer() {
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-theme-primary rounded-full animate-pulse"></div>
               </div>
-              <h3 className="text-theme-primary font-bold text-xl ml-3">Cornos Brasil</h3>
+              <h3 className="text-theme-primary font-bold text-xl ml-3">{siteName}</h3>
             </div>
             <p className="text-theme-secondary text-sm leading-relaxed">
-              A melhor plataforma de vídeos amadores do Brasil. 
-              Conteúdo exclusivo e de qualidade para você.
+              {siteDescription}
             </p>
             <div className="flex items-center justify-center lg:justify-start mt-4 space-x-2">
               <Star className="w-4 h-4 text-yellow-500 fill-current" />
@@ -171,7 +179,7 @@ export default function Footer() {
               </div>
               
               <p className="text-theme-secondary text-xs">
-                © 2025 Cornos Brasil. Todos os direitos reservados.
+                © 2025 {siteName}. Todos os direitos reservados.
               </p>
             </div>
             

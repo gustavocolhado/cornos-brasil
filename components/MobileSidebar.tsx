@@ -3,6 +3,7 @@
 import { X, Home, Play, Users, Crown, Tag, FolderOpen, MessageCircle, HelpCircle, Search } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { useDomainContext } from '@/contexts/DomainContext'
 
 interface MobileSidebarProps {
   isOpen: boolean
@@ -12,6 +13,13 @@ interface MobileSidebarProps {
 export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const { isPremium } = useAuth()
   const router = useRouter()
+  const { domainConfig, isLoading } = useDomainContext()
+
+  // Fallback para quando o domínio ainda não foi carregado
+  const siteName = isLoading || !domainConfig ? 'CORNOS BRASIL' : domainConfig.siteName
+  const siteDescription = isLoading || !domainConfig 
+    ? 'Videos Porno de Sexo Amador'
+    : domainConfig.description.substring(0, 50) + '...'
   return (
     <>
       {/* Overlay */}
@@ -41,8 +49,8 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                      <span className="text-white font-bold text-sm">CB</span>
                    </div>
                    <div>
-                     <h1 className="text-xl font-bold text-theme-primary">CORNOS BRASIL</h1>
-                     <p className="text-xs text-theme-secondary">Videos Porno de Sexo Amador</p>
+                     <h1 className="text-xl font-bold text-theme-primary">{siteName}</h1>
+                     <p className="text-xs text-theme-secondary">{siteDescription}</p>
                    </div>
                  </div>
           

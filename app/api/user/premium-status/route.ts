@@ -1,15 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth.config'
 import { prisma } from '@/lib/prisma'
 
+// Forçar renderização dinâmica
 export const dynamic = 'force-dynamic';
 
 // ⚠️ DEPRECATED: Esta API não é mais necessária
 // O status premium agora é verificado usando os dados da sessão do usuário
 // Esta API pode ser removida após confirmar que não há outros usos
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verificar autenticação
     const session = await getServerSession(authOptions)
