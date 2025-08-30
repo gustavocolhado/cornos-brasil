@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
+import { getServerDomainConfig } from '@/lib/domain';
 
 export async function GET() {
+  const domainConfig = getServerDomainConfig();
+  
   const manifest = {
-    name: "CORNOS BRASIL - Videos Porno de Sexo Amador",
-    short_name: "CORNOS BRASIL",
-    description: "Videos porno de sexo amador brasileiro. Assista videos de corno, porno amador, videos porno grátis.",
+    name: domainConfig.title,
+    short_name: domainConfig.siteName,
+    description: domainConfig.description,
     start_url: "/",
     display: "standalone",
     background_color: "#1a1a1a",
@@ -32,11 +35,11 @@ export async function GET() {
     related_applications: [],
     screenshots: [
       {
-        src: "/imgs/logo.png",
+        src: domainConfig.logo,
         sizes: "1280x720",
         type: "image/png",
         form_factor: "wide",
-        label: "CORNOS BRASIL - Videos Porno Amador"
+        label: domainConfig.title
       }
     ]
   };
