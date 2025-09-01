@@ -87,7 +87,7 @@ export const SOCIAL_URLS = {
 export const SITE_CONFIG = {
   name: 'CORNOS BRASIL',
   url: 'https://cornosbrasil.com',
-  description: 'Videos de corno, porno brasil, marido corno e videos porno de qualidade. Pono, videos porno amador, porno brasileiro e cornos videos. CORNOS BRASIL - O melhor site de videos porno amador do Brasil.',
+  description: 'Videos porno de sexo amador brasileiro',
   language: 'pt-BR',
   country: 'Brasil',
   region: 'BR'
