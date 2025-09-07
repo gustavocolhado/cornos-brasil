@@ -184,8 +184,8 @@ export default function VideosPage() {
             <Section background="white" padding="lg">
               <div className="animate-pulse">
                 <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {[...Array(12)].map((_, index) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-1">
+                  {[...Array(50)].map((_, index) => (
                     <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
                       <div className="aspect-video bg-gray-200"></div>
                       <div className="p-3">
@@ -367,10 +367,10 @@ export default function VideosPage() {
               </div>
             ) : (
               <>
-                <div className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1 mb-8 ${pageLoading ? 'opacity-50' : ''}`}>
+                <div className={`grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-1 mb-8 ${pageLoading ? 'opacity-50' : ''}`}>
                   {filteredVideos.map((video, index) => (
                     <div key={video.id}>
-                                             <VideoCard
+                      <VideoCard
                          id={video.id}
                          title={video.title}
                          duration={formatDuration(video.duration)}
@@ -383,10 +383,10 @@ export default function VideosPage() {
                          category={video.category}
                          creator={video.creator || undefined}
                          onClick={handleVideoClick}
-                       />
+                      />
                       
-                      {/* Mostrar PremiumTeaser a cada 8 vídeos para usuários não premium */}
-                      {!session?.user?.premium && (index + 1) % 11 === 0 && (
+                      {/* Mostrar PremiumTeaser a cada 10 vídeos para usuários não premium */}
+                      {!session?.user?.premium && (index + 1) % 10 === 0 && (
                         <div className="col-span-full mt-6">
                           <PremiumTeaser />
                         </div>

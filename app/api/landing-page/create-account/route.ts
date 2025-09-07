@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcrypt'
 import { prisma } from '@/lib/prisma'
+import { normalizeEmail } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
     const { email, referralData } = await request.json()
 
+    // Normalizar email para minúsculas
+    const normalizedEmail = normalizeEmail(email)
+
     // Validação básica
-    if (!email) {
+    if (!normalizedEmail) {
       return NextResponse.json(
         { error: 'Email é obrigatório' },
         { status: 400 }
@@ -16,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Validar email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return NextResponse.json(
         { error: 'Email inválido' },
         { status: 400 }
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário já existe
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: normalizedEmail }
     })
 
     if (existingUser) {
@@ -42,9 +46,9 @@ export async function POST(request: NextRequest) {
     // Criar usuário com senha temporária
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
-        name: email.split('@')[0], // Usar parte do email como nome
+        name: normalizedEmail.split('@')[0], // Usar parte do email como nome
         signupSource: 'landing_page',
         premium: false, // Será ativado após pagamento
         emailVerified: new Date(),
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Conta criada na LandingPage:', { 
       userId: user.id, 
-      email, 
+      email: normalizedEmail, 
       source: referralData?.source || 'landing_page' 
     })
 

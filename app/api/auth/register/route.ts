@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcrypt'
 import { prisma } from '@/lib/prisma'
+import { normalizeEmail } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +15,11 @@ export async function POST(request: NextRequest) {
       referralData
     } = await request.json()
 
+    // Normalizar email para minúsculas
+    const normalizedEmail = normalizeEmail(email)
+
     // Validação básica
-    if (!email || !password || !name) {
+    if (!normalizedEmail || !password || !name) {
       return NextResponse.json(
         { error: 'Email, senha e nome são obrigatórios' },
         { status: 400 }
@@ -24,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário já existe
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: normalizedEmail }
     })
 
     if (existingUser) {
@@ -51,7 +55,7 @@ export async function POST(request: NextRequest) {
         
         if (payment.status === 'approved') {
           isPremium = true
-          console.log('✅ Usuário registrado com premium ativo via PIX:', { email, pixId })
+          console.log('✅ Usuário registrado com premium ativo via PIX:', { email: normalizedEmail, pixId })
         }
       } catch (error) {
         console.error('❌ Erro ao verificar pagamento PIX:', error)
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Criar usuário
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         name,
         signupSource: source,

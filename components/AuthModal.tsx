@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Eye, EyeOff, Star, Play, RefreshCw, Ban, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { normalizeEmail } from '@/lib/utils'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -30,7 +31,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   })
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    // Normalizar email automaticamente quando o usuário digita
+    const normalizedValue = field === 'email' ? normalizeEmail(value) : value
+    setFormData(prev => ({ ...prev, [field]: normalizedValue }))
     if (errors[field as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [field]: false }))
     }
@@ -112,9 +115,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     
     if (!Object.values(newErrors).some(Boolean)) {
       try {
+        // Garantir que o email está normalizado antes de enviar
+        const normalizedEmail = normalizeEmail(formData.email)
+        
         if (mode === 'login') {
           const result = await signIn('credentials', {
-            email: formData.email,
+            email: normalizedEmail,
             password: formData.password,
             source: 'website'
           })
@@ -132,7 +138,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              email: formData.email,
+              email: normalizedEmail,
               password: formData.password,
               name: formData.profileName,
               source: 'website'
@@ -146,7 +152,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           } else {
             // Fazer login automaticamente após o cadastro
             const loginResult = await signIn('credentials', {
-              email: formData.email,
+              email: normalizedEmail,
               password: formData.password,
               source: 'website'
             })
