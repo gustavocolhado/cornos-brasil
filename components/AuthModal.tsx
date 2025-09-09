@@ -22,17 +22,20 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     profileName: '',
-    password: ''
+    password: '',
+    acceptPromotionalEmails: true,
+    acceptTermsOfUse: false
   })
   const [errors, setErrors] = useState({
     email: false,
     profileName: false,
-    password: false
+    password: false,
+    acceptTermsOfUse: false
   })
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     // Normalizar email automaticamente quando o usuário digita
-    const normalizedValue = field === 'email' ? normalizeEmail(value) : value
+    const normalizedValue = field === 'email' && typeof value === 'string' ? normalizeEmail(value) : value
     setFormData(prev => ({ ...prev, [field]: normalizedValue }))
     if (errors[field as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [field]: false }))
@@ -109,7 +112,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const newErrors = {
       email: !formData.email,
       profileName: mode === 'signup' ? !formData.profileName : false,
-      password: !formData.password
+      password: !formData.password,
+      acceptTermsOfUse: mode === 'signup' ? !formData.acceptTermsOfUse : false
     }
     setErrors(newErrors)
     
@@ -141,7 +145,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               email: normalizedEmail,
               password: formData.password,
               name: formData.profileName,
-              source: 'website'
+              source: 'website',
+              acceptPromotionalEmails: formData.acceptPromotionalEmails,
+              acceptTermsOfUse: formData.acceptTermsOfUse
             }),
           })
 
@@ -481,6 +487,52 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         >
                           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </button>
+                      </div>
+                    </div>
+
+                    {/* Checkboxes */}
+                    <div className="space-y-3">
+                      {/* Termos de Uso - Obrigatório */}
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id="acceptTermsOfUse"
+                          checked={formData.acceptTermsOfUse}
+                          onChange={(e) => handleInputChange('acceptTermsOfUse', e.target.checked)}
+                          className={`mt-1 w-4 h-4 text-accent-red bg-theme-input border-2 rounded focus:ring-accent-red focus:ring-2 ${
+                            errors.acceptTermsOfUse ? 'border-red-500' : 'border-theme-primary'
+                          }`}
+                        />
+                        <label htmlFor="acceptTermsOfUse" className="text-sm text-theme-primary">
+                          <span className="text-red-500">*</span> Aceito os{' '}
+                          <a href="/terms" target="_blank" className="text-accent-red hover:underline">
+                            Termos de Uso
+                          </a>{' '}
+                          e{' '}
+                          <a href="/privacy" target="_blank" className="text-accent-red hover:underline">
+                            Política de Privacidade
+                          </a>
+                        </label>
+                      </div>
+                      {errors.acceptTermsOfUse && (
+                        <div className="flex items-center text-red-500 text-sm">
+                          <X size={16} className="mr-1" />
+                          Você deve aceitar os termos de uso para continuar.
+                        </div>
+                      )}
+
+                      {/* Emails Promocionais - Opcional */}
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id="acceptPromotionalEmails"
+                          checked={formData.acceptPromotionalEmails}
+                          onChange={(e) => handleInputChange('acceptPromotionalEmails', e.target.checked)}
+                          className="mt-1 w-4 h-4 text-accent-red bg-theme-input border-2 border-theme-primary rounded focus:ring-accent-red focus:ring-2"
+                        />
+                        <label htmlFor="acceptPromotionalEmails" className="text-sm text-theme-primary">
+                          Aceito receber emails promocionais e ofertas especiais
+                        </label>
                       </div>
                     </div>
 

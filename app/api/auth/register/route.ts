@@ -12,7 +12,9 @@ export async function POST(request: NextRequest) {
       source = 'website',
       planId,
       pixId,
-      referralData
+      referralData,
+      acceptPromotionalEmails = true,
+      acceptTermsOfUse = false
     } = await request.json()
 
     // Normalizar email para minúsculas
@@ -22,6 +24,14 @@ export async function POST(request: NextRequest) {
     if (!normalizedEmail || !password || !name) {
       return NextResponse.json(
         { error: 'Email, senha e nome são obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    // Validação dos termos de uso
+    if (!acceptTermsOfUse) {
+      return NextResponse.json(
+        { error: 'Você deve aceitar os termos de uso para continuar' },
         { status: 400 }
       )
     }
@@ -71,6 +81,8 @@ export async function POST(request: NextRequest) {
         signupSource: source,
         premium: isPremium,
         emailVerified: new Date(),
+        acceptPromotionalEmails,
+        acceptTermsOfUse,
       }
     })
 

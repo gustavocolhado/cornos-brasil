@@ -5,7 +5,7 @@ import { normalizeEmail } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, referralData } = await request.json()
+    const { email, referralData, acceptPromotionalEmails = true, acceptTermsOfUse = false } = await request.json()
 
     // Normalizar email para minúsculas
     const normalizedEmail = normalizeEmail(email)
@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
         signupSource: 'landing_page',
         premium: false, // Será ativado após pagamento
         emailVerified: new Date(),
+        acceptPromotionalEmails,
+        acceptTermsOfUse,
         tempPassword: true, // Marcar como senha temporária
       }
     })

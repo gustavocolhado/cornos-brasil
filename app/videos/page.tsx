@@ -8,6 +8,8 @@ import VideoCard from '@/components/VideoCard'
 import Pagination from '@/components/Pagination'
 import PremiumTeaser from '@/components/PremiumTeaser'
 import SEOHead from '@/components/SEOHead'
+import VideoAdBanner from '@/components/ads/VideoAdBanner'
+import PremiumVideoTeaser from '@/components/ads/PremiumVideoTeaser'
 import { Search, Play, TrendingUp, Heart, Clock, Shuffle, Filter } from 'lucide-react'
 import { useVideos } from '@/hooks/useVideos'
 import { useSession } from 'next-auth/react'
@@ -368,31 +370,49 @@ export default function VideosPage() {
             ) : (
               <>
                 <div className={`grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-1 mb-8 ${pageLoading ? 'opacity-50' : ''}`}>
-                  {filteredVideos.map((video, index) => (
-                    <div key={video.id}>
-                      <VideoCard
-                         id={video.id}
-                         title={video.title}
-                         duration={formatDuration(video.duration)}
-                         thumbnailUrl={video.thumbnailUrl}
-                         videoUrl={video.videoUrl}
-                         trailerUrl={video.trailerUrl || undefined}
-                         isIframe={video.iframe}
-                         premium={video.premium}
-                         viewCount={video.viewCount}
-                         category={video.category}
-                         creator={video.creator || undefined}
-                         onClick={handleVideoClick}
-                      />
-                      
-                      {/* Mostrar PremiumTeaser a cada 10 vídeos para usuários não premium */}
-                      {!session?.user?.premium && (index + 1) % 10 === 0 && (
-                        <div className="col-span-full mt-6">
-                          <PremiumTeaser />
+                  {filteredVideos.map((video, index) => {
+                    const items = []
+                    
+                    // Adicionar o vídeo
+                    items.push(
+                      <div key={video.id}>
+                        <VideoCard
+                           id={video.id}
+                           title={video.title}
+                           duration={formatDuration(video.duration)}
+                           thumbnailUrl={video.thumbnailUrl}
+                           videoUrl={video.videoUrl}
+                           trailerUrl={video.trailerUrl || undefined}
+                           isIframe={video.iframe}
+                           premium={video.premium}
+                           viewCount={video.viewCount}
+                           category={video.category}
+                           creator={video.creator || undefined}
+                           onClick={handleVideoClick}
+                        />
+                      </div>
+                    )
+                    
+                    // Adicionar anúncio a cada 15 vídeos para usuários não premium
+                    if (!session?.user?.premium && (index + 1) % 15 === 0) {
+                      items.push(
+                        <div key={`ad-${index}`}>
+                          <VideoAdBanner />
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      )
+                    }
+                    
+                    // Adicionar PremiumVideoTeaser a cada 20 vídeos para usuários não premium
+                    if (!session?.user?.premium && (index + 1) % 20 === 0) {
+                      items.push(
+                        <div key={`teaser-${index}`}>
+                          <PremiumVideoTeaser />
+                        </div>
+                      )
+                    }
+                    
+                    return items
+                  }).flat()}
                 </div>
 
                 {/* Paginação */}
