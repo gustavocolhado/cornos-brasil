@@ -17,53 +17,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR">
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Definir tema escuro como padrão antes da página carregar
-              (function() {
-                try {
-                  const savedTheme = localStorage.getItem('theme');
-                  if (savedTheme) {
-                    document.documentElement.className = savedTheme;
-                  } else {
-                    document.documentElement.className = 'dark';
-                  }
-                } catch (e) {
-                  document.documentElement.className = 'dark';
-                }
-              })();
-            `,
-          }}
-        />
         <link rel="search" type="application/opensearchdescription+xml" title="CORNOS BRASIL" href="/opensearch.xml" />
-        {/* Google Analytics */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script
-              id="google-analytics"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
-                    page_title: document.title,
-                    page_location: window.location.href,
-                  });
-                `,
-              }}
-            />
-          </>
-        )}
-        
         <Script
           id="microsoft-clarity"
           strategy="afterInteractive"

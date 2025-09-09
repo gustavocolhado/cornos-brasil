@@ -26,11 +26,13 @@ import VideoBreadcrumbs from '@/components/VideoBreadcrumbs'
 import { useRelatedVideos } from '@/hooks/useRelatedVideos'
 import { useVideoActions } from '@/hooks/useVideoActions'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
+import { useVideoPreload } from '@/hooks/useVideoPreload'
 import AdIframe300x250 from '@/components/ads/300x250'
 import AdIframe728x90 from '@/components/ads/728x90'
 import AdIframe300x100 from '@/components/ads/300x100'
 import VideoAdBanner from '@/components/ads/VideoAdBanner'
 import PremiumVideoTeaser from '@/components/ads/PremiumVideoTeaser'
+import VideoPreloadIndicator from '@/components/VideoPreloadIndicator'
 
 interface VideoData {
   id: string
@@ -78,6 +80,13 @@ export default function VideoPage() {
   // Hook para ações do vídeo
   const { isLiked, isFavorited, isLoading: actionsLoading, toggleLike, toggleFavorite, recordView } = useVideoActions({
     videoId: videoUrl
+  })
+
+  // Hook para preload inteligente de vídeos relacionados
+  const { isVideoPreloaded, preloadProgress } = useVideoPreload({
+    videoUrls: relatedVideos.map(v => v.videoUrl).filter((url): url is string => Boolean(url)),
+    maxPreload: 3,
+    preloadDelay: 2000
   })
 
   // Verificar se o vídeo é premium e o usuário não é premium
@@ -718,6 +727,12 @@ export default function VideoPage() {
           </div>
         </div>
       </main>
+
+      {/* Indicador de Preload */}
+      <VideoPreloadIndicator 
+        progress={preloadProgress} 
+        isPreloading={preloadProgress < 1 && relatedVideos.length > 0}
+      />
         </Layout>
       </>
     )
