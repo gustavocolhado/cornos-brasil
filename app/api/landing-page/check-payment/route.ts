@@ -5,6 +5,24 @@ interface CheckPaymentRequest {
   pixId: string
 }
 
+// Função para obter duração do plano em dias
+function getPlanDurationInDays(plan: string): number {
+  switch (plan) {
+    case 'yearly':
+      return 365
+    case 'semiannual':
+      return 180
+    case 'quarterly':
+      return 90
+    case 'monthly':
+      return 30
+    case 'lifetime':
+      return 36500 // 100 anos
+    default:
+      return 30
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CheckPaymentRequest = await request.json()
@@ -26,30 +44,120 @@ export async function POST(request: NextRequest) {
     let payment = null
 
     if (isUUID) {
-      // Para PushinPay (UUID), buscar pela PaymentSession primeiro
-      console.log('🔍 Buscando PaymentSession para UUID do PushinPay...')
-      const paymentSession = await prisma.paymentSession.findFirst({
-        where: {
-          preferenceId: pixId // Só buscar pelo UUID como preferenceId
-        },
-        orderBy: { updatedAt: 'desc' }
-      })
-
-      if (paymentSession) {
-        console.log('✅ PaymentSession encontrada:', {
-          id: paymentSession.id,
-          paymentId: paymentSession.paymentId,
-          preferenceId: paymentSession.preferenceId,
-          status: paymentSession.status
+      // Para PushinPay (UUID), consultar diretamente a API da PushinPay
+      console.log('🔍 Consultando status PIX diretamente na PushinPay...')
+      
+      try {
+        // Fazer requisição para o endpoint de status da PushinPay
+        // Usar URL absoluta para requisições internas no servidor
+        const baseUrl = process.env.HOST_URL || 'http://localhost:3000'
+        const pushinPayResponse = await fetch(`${baseUrl}/api/pushin-pay/status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ pixId })
         })
 
-        // Buscar pagamento relacionado à PaymentSession
-        // Para PushinPay, só buscar pelo preferenceId (UUID), não pelo paymentId
-        payment = await prisma.payment.findFirst({
-          where: {
-            preferenceId: paymentSession.preferenceId // Só buscar pelo UUID
+        if (pushinPayResponse.ok) {
+          const pushinPayData = await pushinPayResponse.json()
+          console.log('✅ Status PIX PushinPay:', pushinPayData)
+          
+          // Verificar se o pagamento foi confirmado
+          if (pushinPayData.status === 'paid') {
+            // Buscar PaymentSession para obter dados do usuário
+            const paymentSession = await prisma.paymentSession.findFirst({
+              where: {
+                preferenceId: pixId
+              },
+              orderBy: { updatedAt: 'desc' }
+            })
+
+            if (paymentSession) {
+              // Buscar pagamento relacionado
+              payment = await prisma.payment.findFirst({
+                where: {
+                  preferenceId: paymentSession.preferenceId
+                }
+              })
+
+              // Se não existe pagamento, mas o PIX foi pago, criar o registro e ativar premium
+              if (!payment && pushinPayData.status === 'paid') {
+                // Calcular data de expiração
+                const expireDate = new Date()
+                expireDate.setDate(expireDate.getDate() + getPlanDurationInDays(paymentSession.plan))
+
+                // Atualizar PaymentSession
+                await prisma.paymentSession.update({
+                  where: { id: paymentSession.id },
+                  data: {
+                    status: 'paid',
+                    updatedAt: new Date()
+                  }
+                })
+
+                // Ativar premium no usuário
+                await prisma.user.update({
+                  where: { id: paymentSession.userId },
+                  data: {
+                    premium: true,
+                    expireDate: expireDate,
+                    paymentStatus: 'paid',
+                    paymentDate: new Date()
+                  }
+                })
+
+                // Criar registro de pagamento
+                payment = await prisma.payment.create({
+                  data: {
+                    userId: paymentSession.userId,
+                    plan: paymentSession.plan,
+                    amount: paymentSession.amount,
+                    userEmail: paymentSession.userEmail || '',
+                    status: 'paid',
+                    paymentId: null,
+                    preferenceId: pixId,
+                    duration: getPlanDurationInDays(paymentSession.plan)
+                  }
+                })
+                console.log('✅ Payment criado e premium ativado após confirmação PushinPay')
+              }
+            }
           }
+        } else if (pushinPayResponse.status === 404) {
+          console.log('❌ PIX não encontrado na PushinPay:', pixId)
+        } else {
+          console.error('❌ Erro ao consultar PushinPay:', pushinPayResponse.status)
+        }
+      } catch (error) {
+        console.error('❌ Erro ao consultar PushinPay:', error)
+      }
+
+      // Fallback: buscar pela PaymentSession se não conseguiu consultar a API
+      if (!payment) {
+        console.log('🔍 Fallback: Buscando PaymentSession para UUID do PushinPay...')
+        const paymentSession = await prisma.paymentSession.findFirst({
+          where: {
+            preferenceId: pixId
+          },
+          orderBy: { updatedAt: 'desc' }
         })
+
+        if (paymentSession) {
+          console.log('✅ PaymentSession encontrada:', {
+            id: paymentSession.id,
+            paymentId: paymentSession.paymentId,
+            preferenceId: paymentSession.preferenceId,
+            status: paymentSession.status
+          })
+
+          // Buscar pagamento relacionado à PaymentSession
+          payment = await prisma.payment.findFirst({
+            where: {
+              preferenceId: paymentSession.preferenceId
+            }
+          })
+        }
       }
     } else {
       // Para Mercado Pago (número), buscar diretamente

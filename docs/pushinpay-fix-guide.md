@@ -177,27 +177,12 @@ Os logs agora incluem informações detalhadas:
 ✅ Pagamento confirmado via webhook Pushin Pay (após validações)
 ```
 
-## 🔄 **Unificação com /premium**
-
-Para garantir consistência e evitar problemas futuros, a landing page agora usa os mesmos endpoints do `/premium`:
-
-### **Endpoints Unificados:**
-- **Criação de PIX**: `/api/pushin-pay/create-pix` (mesmo do /premium)
-- **Verificação de Status**: `/api/payment/check-status` (novo endpoint unificado)
-
-### **Benefícios da Unificação:**
-- ✅ **Consistência**: Mesma lógica para landing page e /premium
-- ✅ **Manutenção**: Um só lugar para corrigir problemas
-- ✅ **Confiabilidade**: Endpoints já testados e funcionando
-- ✅ **Simplicidade**: Menos código duplicado
-
 ## 🚀 Próximos Passos
 
 1. **Monitorar logs** em produção para verificar se as correções estão funcionando
 2. **Ajustar tempos** se necessário (30 segundos pode ser muito ou pouco)
 3. **Implementar alertas** para webhooks suspeitos
 4. **Considerar rate limiting** no webhook se necessário
-5. **Remover endpoints antigos** da landing page após confirmação de funcionamento
 
 ## ⚠️ Notas Importantes
 
