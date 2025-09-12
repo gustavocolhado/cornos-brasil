@@ -22,7 +22,17 @@ export async function POST(request: NextRequest) {
     // Buscar configurações de pagamento
     const paymentSettings = await getPaymentSettings()
     
+    console.log('🔧 Configurações PushinPay:', {
+      enabled: paymentSettings.pushinpay.enabled,
+      hasAccessToken: !!paymentSettings.pushinpay.accessToken,
+      accessTokenLength: paymentSettings.pushinpay.accessToken?.length || 0
+    })
+    
     if (!paymentSettings.pushinpay.enabled || !paymentSettings.pushinpay.accessToken) {
+      console.error('❌ PushinPay não configurado:', {
+        enabled: paymentSettings.pushinpay.enabled,
+        hasAccessToken: !!paymentSettings.pushinpay.accessToken
+      })
       return NextResponse.json(
         { error: 'Pushin Pay não está configurado ou habilitado' },
         { status: 500 }
@@ -30,6 +40,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Fazer requisição para a API da PushinPay para consultar o status
+    console.log('📡 Fazendo requisição para PushinPay:', `https://api.pushinpay.com.br/api/pix/${pixId}`)
+    
     const response = await fetch(`https://api.pushinpay.com.br/api/pix/${pixId}`, {
       method: 'GET',
       headers: {
@@ -37,6 +49,12 @@ export async function POST(request: NextRequest) {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       }
+    })
+
+    console.log('📊 Resposta da PushinPay:', {
+      status: response.status,
+      ok: response.ok,
+      statusText: response.statusText
     })
 
     if (response.status === 404) {
@@ -48,8 +66,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Erro na API da PushinPay:', errorData)
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch (parseError) {
+        errorData = { message: `Erro HTTP ${response.status}: ${response.statusText}` }
+      }
+      
+      console.error('❌ Erro na API da PushinPay:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData
+      })
       
       return NextResponse.json(
         { error: `Erro ao consultar PIX: ${errorData.message || 'Erro desconhecido'}` },

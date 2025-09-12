@@ -136,11 +136,18 @@ export async function POST(request: NextRequest) {
       // Fallback: buscar pela PaymentSession se não conseguiu consultar a API
       if (!payment) {
         console.log('🔍 Fallback: Buscando PaymentSession para UUID do PushinPay...')
+        
+        // Buscar PaymentSession com mais opções
         const paymentSession = await prisma.paymentSession.findFirst({
           where: {
-            preferenceId: pixId
+            OR: [
+              { preferenceId: pixId },
+              { preferenceId: pixId.toUpperCase() },
+              { preferenceId: pixId.toLowerCase() }
+            ]
           },
-          orderBy: { updatedAt: 'desc' }
+          orderBy: { updatedAt: 'desc' },
+          include: { user: true }
         })
 
         if (paymentSession) {
@@ -148,14 +155,68 @@ export async function POST(request: NextRequest) {
             id: paymentSession.id,
             paymentId: paymentSession.paymentId,
             preferenceId: paymentSession.preferenceId,
-            status: paymentSession.status
+            status: paymentSession.status,
+            userId: paymentSession.userId,
+            userEmail: paymentSession.userEmail,
+            plan: paymentSession.plan,
+            amount: paymentSession.amount
           })
 
-          // Buscar pagamento relacionado à PaymentSession
-          payment = await prisma.payment.findFirst({
-            where: {
-              preferenceId: paymentSession.preferenceId
+          // Se a PaymentSession está como 'paid', considerar como pagamento confirmado
+          if (paymentSession.status === 'paid') {
+            console.log('✅ PaymentSession já está marcada como paga, criando registro de pagamento...')
+            
+            // Criar registro de pagamento se não existir
+            payment = await prisma.payment.findFirst({
+              where: {
+                preferenceId: paymentSession.preferenceId
+              }
+            })
+
+            if (!payment) {
+              payment = await prisma.payment.create({
+                data: {
+                  userId: paymentSession.userId,
+                  plan: paymentSession.plan,
+                  amount: paymentSession.amount,
+                  userEmail: paymentSession.userEmail || '',
+                  status: 'paid',
+                  paymentId: null,
+                  preferenceId: paymentSession.preferenceId,
+                  duration: getPlanDurationInDays(paymentSession.plan)
+                }
+              })
+              console.log('✅ Payment criado via PaymentSession')
             }
+          } else {
+            // Buscar pagamento relacionado à PaymentSession
+            payment = await prisma.payment.findFirst({
+              where: {
+                preferenceId: paymentSession.preferenceId
+              }
+            })
+          }
+        } else {
+          console.log('❌ PaymentSession não encontrada para UUID:', pixId)
+          
+          // Debug: listar todas as PaymentSessions recentes
+          const recentSessions = await prisma.paymentSession.findMany({
+            take: 10,
+            orderBy: { updatedAt: 'desc' },
+            select: {
+              id: true,
+              preferenceId: true,
+              status: true,
+              plan: true,
+              amount: true,
+              userEmail: true,
+              createdAt: true
+            }
+          })
+          
+          console.log('🔍 PaymentSessions recentes para debug:')
+          recentSessions.forEach((session, index) => {
+            console.log(`${index + 1}. ID: ${session.id}, PreferenceID: ${session.preferenceId}, Status: ${session.status}, Plan: ${session.plan}`)
           })
         }
       }

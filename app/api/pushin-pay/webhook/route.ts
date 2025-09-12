@@ -291,15 +291,46 @@ export async function POST(request: NextRequest) {
 
       // Verificar se a PaymentSession existe e está pendente
       // Para PushinPay, o ID é um UUID, então buscamos pelo preferenceId
+      // Buscar com diferentes formatos de case para garantir compatibilidade
       const paymentSession = await prisma.paymentSession.findFirst({
         where: {
-          preferenceId: normalizedPixId // PushinPay salva o UUID como preferenceId
+          OR: [
+            { preferenceId: normalizedPixId }, // Maiúsculo (normalizado)
+            { preferenceId: id }, // Original (como veio do webhook)
+            { preferenceId: id.toLowerCase() }, // Minúsculo
+            { preferenceId: id.toUpperCase() } // Maiúsculo (dupla verificação)
+          ]
         },
         orderBy: { updatedAt: 'desc' }
       })
 
       if (!paymentSession) {
-        console.log('⚠️ PaymentSession não encontrada para o PIX, ignorando:', normalizedPixId)
+        console.log('⚠️ PaymentSession não encontrada para o PIX, ignorando:', {
+          normalizedPixId,
+          originalId: id,
+          searchedFormats: [normalizedPixId, id, id.toLowerCase(), id.toUpperCase()]
+        })
+        
+        // Debug: listar PaymentSessions recentes para investigar
+        const recentSessions = await prisma.paymentSession.findMany({
+          take: 10,
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            id: true,
+            preferenceId: true,
+            status: true,
+            plan: true,
+            amount: true,
+            userEmail: true,
+            createdAt: true
+          }
+        })
+        
+        console.log('🔍 PaymentSessions recentes para debug:')
+        recentSessions.forEach((session, index) => {
+          console.log(`${index + 1}. ID: ${session.id}, PreferenceID: ${session.preferenceId}, Status: ${session.status}, Plan: ${session.plan}`)
+        })
+        
         return NextResponse.json({ success: true, message: 'PaymentSession não encontrada, ignorado' })
       }
 
