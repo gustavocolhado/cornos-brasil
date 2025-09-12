@@ -334,16 +334,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'PaymentSession não encontrada, ignorado' })
       }
 
-      // Verificar se a PaymentSession foi criada há pelo menos 30 segundos (evita confirmações imediatas)
-      const sessionAge = Date.now() - paymentSession.createdAt.getTime()
-      if (sessionAge < 30000) { // 30 segundos
-        console.log('⚠️ PaymentSession muito recente, pode ser confirmação prematura, ignorando:', {
-          pixId: normalizedPixId,
-          sessionAge: sessionAge,
-          createdAt: paymentSession.createdAt
-        })
-        return NextResponse.json({ success: true, message: 'PaymentSession muito recente, ignorado' })
-      }
+      // Não há tempo de proteção - o pagamento é confirmado pelo UUID da PushinPay
+      console.log('✅ PaymentSession encontrada, processando pagamento imediatamente:', {
+        pixId: normalizedPixId,
+        sessionAge: Date.now() - paymentSession.createdAt.getTime(),
+        createdAt: paymentSession.createdAt
+      })
 
       // Verificar se o valor do webhook corresponde ao valor da PaymentSession
       const expectedValue = Math.round(paymentSession.amount * 100) // Converter para centavos
