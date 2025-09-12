@@ -303,13 +303,13 @@ export default function LandingPage() {
       const initialDelay = setTimeout(() => {
         const pollInterval = setInterval(async () => {
           try {
-            const response = await fetch('/api/landing-page/check-payment', {
+            const response = await fetch('/api/payment/check-status', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                pixId: pixData.id
+                preferenceId: pixData.id
               }),
             });
 
@@ -357,19 +357,19 @@ export default function LandingPage() {
     }
   }, [pixData?.qr_code_base64, generatedQRCode]);
 
-  // Função para verificar status do pagamento manualmente
+  // Função para verificar status do pagamento manualmente (usando API unificada)
   const checkPaymentStatus = async () => {
     if (!pixData) return;
     
     setIsCheckingPayment(true);
     try {
-      const response = await fetch('/api/landing-page/check-payment', {
+      const response = await fetch('/api/payment/check-status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          pixId: pixData.id
+          preferenceId: pixData.id
         }),
       });
 
@@ -498,8 +498,8 @@ export default function LandingPage() {
       
       console.log('📊 Dados da campanha:', campaignInfo);
       
-      // Criar PIX usando a API específica da LandingPage
-      const response = await fetch('/api/landing-page/create-pix', {
+      // Criar PIX usando a API unificada do PushinPay (mesma do /premium)
+      const response = await fetch('/api/pushin-pay/create-pix', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -508,7 +508,7 @@ export default function LandingPage() {
           value: selectedPlan.price,
           email: email,
           planId: selectedPlan.id,
-          referralData: campaignInfo
+          webhookUrl: `${window.location.origin}/api/pushin-pay/webhook`
         }),
       });
 
