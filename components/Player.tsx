@@ -139,6 +139,25 @@ export default function VideoJSPlayer({
     }
   }
 
+  // Função para verificar compatibilidade iOS
+  const isIOSCompatible = (url: string, videoType: string) => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    if (!isIOS) return true
+    
+    // iOS tem limitações com certos formatos
+    if (videoType === 'video/webm') {
+      console.log('🍎 Player: iOS não suporta WebM, usando fallback')
+      return false
+    }
+    
+    if (videoType === 'application/x-mpegURL') {
+      console.log('🍎 Player: iOS suporta HLS nativamente')
+      return true
+    }
+    
+    return true
+  }
+
   // Inicializar o player HLS
   useEffect(() => {
     const video = videoRef.current
@@ -156,6 +175,17 @@ export default function VideoJSPlayer({
     const finalVideoUrl = getVideoUrl(videoUrl)
     const finalPosterUrl = poster ? getPosterUrl(poster) : ''
     const videoType = getVideoType(finalVideoUrl)
+    
+    // Verificar compatibilidade iOS
+    if (!isIOSCompatible(finalVideoUrl, videoType)) {
+      console.log('🍎 Player: Vídeo não compatível com iOS, usando fallback')
+      const fallbackUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+      video.src = fallbackUrl
+      video.preload = 'auto'
+      setIsLoading(false)
+      onLoad?.()
+      return
+    }
 
     // Timeout para garantir que o loading não fique preso
     const loadingTimeout = setTimeout(() => {
@@ -198,10 +228,22 @@ export default function VideoJSPlayer({
     video.controls = controls
     video.preload = optimizedPreload
     
-    // Otimizações de performance
+    // Otimizações de performance e compatibilidade iOS
     video.playsInline = true
     video.disablePictureInPicture = false
     video.crossOrigin = 'anonymous'
+    
+    // Configurações específicas para iOS/Safari
+    video.setAttribute('webkit-playsinline', 'true')
+    video.setAttribute('playsinline', 'true')
+    video.setAttribute('x-webkit-airplay', 'allow')
+    
+    // Para iOS, usar preload mais conservador se conexão for lenta
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    if (isIOS && connection && (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')) {
+      video.preload = 'none'
+      console.log('🍎 Player: iOS detectado com conexão lenta, usando preload none')
+    }
     
     // Configurar qualidade adaptativa se disponível
     if ('requestVideoFrameCallback' in video) {
@@ -373,36 +415,37 @@ export default function VideoJSPlayer({
       console.error('❌ Player: Erro no vídeo:', e)
       const videoElement = e.target as HTMLVideoElement
       const error = videoElement.error
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
       
       let errorMessage = 'Erro ao carregar o vídeo'
       if (error) {
         switch (error.code) {
           case 1:
-            errorMessage = 'Erro de rede ao carregar o vídeo'
+            errorMessage = isIOS ? 'Erro de rede. Verifique sua conexão e tente novamente.' : 'Erro de rede ao carregar o vídeo'
             break
           case 2:
-            errorMessage = 'Erro ao decodificar o vídeo'
+            errorMessage = isIOS ? 'Formato de vídeo não suportado no iOS. Tente em outro dispositivo.' : 'Erro ao decodificar o vídeo'
             break
           case 3:
-            errorMessage = 'Formato de vídeo não suportado'
+            errorMessage = isIOS ? 'Formato não suportado no iPhone/iPad' : 'Formato de vídeo não suportado'
             break
           case 4:
-            errorMessage = 'Vídeo não pode ser reproduzido'
+            errorMessage = isIOS ? 'Vídeo não pode ser reproduzido no iOS' : 'Vídeo não pode ser reproduzido'
             break
           default:
-            errorMessage = error.message || 'Erro ao carregar o vídeo'
+            errorMessage = error.message || (isIOS ? 'Erro no iOS. Tente atualizar o Safari.' : 'Erro ao carregar o vídeo')
         }
       }
       
-             // Se a URL original tem duplicação de domínio, tentar com fallback
-       if (videoUrl.includes('https://') && videoUrl.split('https://').length > 2) {
-         console.log('🔄 Player: Tentando com vídeo de fallback devido a URL malformada')
-         const fallbackUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-         video.src = fallbackUrl
-         setError(null)
-         setIsLoading(true)
-         return
-       }
+      // Fallback para iOS ou URLs malformadas
+      if (isIOS || (videoUrl.includes('https://') && videoUrl.split('https://').length > 2)) {
+        console.log('🔄 Player: Tentando com vídeo de fallback para iOS ou URL malformada')
+        const fallbackUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+        video.src = fallbackUrl
+        setError(null)
+        setIsLoading(true)
+        return
+      }
        
        clearTimeout(loadingTimeout)
        setError(errorMessage)
@@ -497,6 +540,9 @@ export default function VideoJSPlayer({
           className="w-full h-full"
           playsInline
           webkit-playsinline="true"
+          x-webkit-airplay="allow"
+          preload="auto"
+          controls
         />
       )}
     </div>
