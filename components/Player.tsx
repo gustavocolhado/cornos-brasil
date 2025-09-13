@@ -37,8 +37,7 @@ export default function VideoJSPlayer({
   const getVideoUrl = (url: string) => {
     if (!url) {
       console.warn('🎬 Player: URL do vídeo está vazia')
-      // Fallback para vídeo de teste
-      return 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+      return ''
     }
     
     console.log('🎬 Player: URL original:', url)
@@ -139,24 +138,6 @@ export default function VideoJSPlayer({
     }
   }
 
-  // Função para verificar compatibilidade iOS
-  const isIOSCompatible = (url: string, videoType: string) => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    if (!isIOS) return true
-    
-    // iOS tem limitações com certos formatos
-    if (videoType === 'video/webm') {
-      console.log('🍎 Player: iOS não suporta WebM, usando fallback')
-      return false
-    }
-    
-    if (videoType === 'application/x-mpegURL') {
-      console.log('🍎 Player: iOS suporta HLS nativamente')
-      return true
-    }
-    
-    return true
-  }
 
   // Inicializar o player HLS
   useEffect(() => {
@@ -176,15 +157,10 @@ export default function VideoJSPlayer({
     const finalPosterUrl = poster ? getPosterUrl(poster) : ''
     const videoType = getVideoType(finalVideoUrl)
     
-    // Verificar compatibilidade iOS
-    if (!isIOSCompatible(finalVideoUrl, videoType)) {
-      console.log('🍎 Player: Vídeo não compatível com iOS, usando fallback')
-      const fallbackUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-      video.src = fallbackUrl
-      video.preload = 'auto'
-      setIsLoading(false)
-      onLoad?.()
-      return
+    // Log para iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    if (isIOS) {
+      console.log('🍎 Player: iOS detectado, carregando vídeo original')
     }
 
     // Timeout para garantir que o loading não fique preso
@@ -437,15 +413,7 @@ export default function VideoJSPlayer({
         }
       }
       
-      // Fallback para iOS ou URLs malformadas
-      if (isIOS || (videoUrl.includes('https://') && videoUrl.split('https://').length > 2)) {
-        console.log('🔄 Player: Tentando com vídeo de fallback para iOS ou URL malformada')
-        const fallbackUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
-        video.src = fallbackUrl
-        setError(null)
-        setIsLoading(true)
-        return
-      }
+      // Sem fallback - sempre usar o vídeo original
        
        clearTimeout(loadingTimeout)
        setError(errorMessage)
