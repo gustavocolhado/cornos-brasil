@@ -26,7 +26,7 @@ export default function VideoJSPlayer({
   muted = false, 
   loop = false,
   controls = true,
-  preload = 'metadata'
+  preload = 'auto'
 }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -172,13 +172,31 @@ export default function VideoJSPlayer({
       controls
     })
 
+    // Detectar qualidade da conexão e ajustar preload
+    const connection = (navigator as any).connection
+    let optimizedPreload = preload
+    
+    if (connection) {
+      console.log('🌐 Player: Qualidade da conexão detectada:', connection.effectiveType)
+      if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+        optimizedPreload = 'metadata'
+        console.log('🐌 Player: Conexão lenta detectada, usando preload metadata')
+      } else if (connection.effectiveType === '3g') {
+        optimizedPreload = 'metadata'
+        console.log('📱 Player: Conexão 3G detectada, usando preload metadata')
+      } else {
+        optimizedPreload = 'auto'
+        console.log('🚀 Player: Conexão rápida detectada, usando preload auto')
+      }
+    }
+
     // Configurar atributos do vídeo com otimizações
     video.poster = finalPosterUrl
     video.autoplay = autoPlay
     video.muted = muted
     video.loop = loop
     video.controls = controls
-    video.preload = preload
+    video.preload = optimizedPreload
     
     // Otimizações de performance
     video.playsInline = true
@@ -324,9 +342,19 @@ export default function VideoJSPlayer({
         const currentTime = video.currentTime
         const duration = video.duration
         
+        // Calcular percentual carregado
+        const bufferedPercent = (bufferedEnd / duration) * 100
+        
+        // Se temos mais de 50% do vídeo carregado, reduzir prioridade
+        if (bufferedPercent > 50) {
+          video.preload = 'metadata'
+          console.log('📊 Player: Vídeo 50%+ carregado, reduzindo preload para metadata')
+        }
+        
         // Se temos mais de 30 segundos carregados, reduzir prioridade
         if (bufferedEnd - currentTime > 30) {
           video.preload = 'metadata'
+          console.log('📊 Player: 30+ segundos carregados, reduzindo preload para metadata')
         }
       }
     }
