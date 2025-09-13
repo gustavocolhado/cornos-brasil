@@ -157,7 +157,7 @@ export default function VideoJSPlayer({
     const finalPosterUrl = poster ? getPosterUrl(poster) : ''
     const videoType = getVideoType(finalVideoUrl)
     
-    // Log para iOS
+    // Detectar iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     if (isIOS) {
       console.log('🍎 Player: iOS detectado, carregando vídeo original')
@@ -215,7 +215,6 @@ export default function VideoJSPlayer({
     video.setAttribute('x-webkit-airplay', 'allow')
     
     // Para iOS, usar preload mais conservador se conexão for lenta
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     if (isIOS && connection && (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')) {
       video.preload = 'none'
       console.log('🍎 Player: iOS detectado com conexão lenta, usando preload none')
