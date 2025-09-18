@@ -279,7 +279,7 @@ export default function LandingPage() {
     {
       id: 'lifetime',
       title: 'Vitalício',
-      price: 100, // R$ 499,90 em centavos
+      price: 49990, // R$ 499,90 em centavos
       description: 'Acesso para sempre - 79% OFF',
       originalPrice: 238800,
       popular: false
