@@ -144,7 +144,9 @@ export async function POST(request: NextRequest) {
     // Limpar cache antigo (manter apenas os últimos 100 itens)
     if (statusCache.size > 100) {
       const oldestKey = statusCache.keys().next().value
-      statusCache.delete(oldestKey)
+      if (oldestKey) {
+        statusCache.delete(oldestKey)
+      }
     }
 
     return NextResponse.json({
