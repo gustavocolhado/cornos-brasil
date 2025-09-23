@@ -3,6 +3,7 @@ import Script from 'next/script'
 import './globals.css'
 import Providers from '@/components/Providers'
 import DynamicMetadata from '@/components/DynamicMetadata'
+import Analytics from '@/components/Analytics'
 import { getServerDomainConfig, generateDomainMetadata } from '@/lib/domain'
 
 // Generate metadata based on current domain
@@ -36,6 +37,7 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
+          <Analytics />
           <DynamicMetadata />
           {children}
         </Providers>
