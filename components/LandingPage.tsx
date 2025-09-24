@@ -330,6 +330,18 @@ export default function LandingPage() {
               const statusData = await response.json();
               if (statusData.paid && !paymentConfirmed) {
                 console.log('✅ Pagamento confirmado automaticamente!');
+                
+                // Processar tracking CPA se aplicável
+                if (isCPASource && selectedPlan) {
+                  console.log('🎯 Processando conversão CPA para TrafficStars (PIX)');
+                  try {
+                    await triggerConversion(email, selectedPlan.id, selectedPlan.price / 100);
+                    console.log('✅ Conversão CPA registrada com sucesso (PIX)');
+                  } catch (error) {
+                    console.error('❌ Erro ao registrar conversão CPA (PIX):', error);
+                  }
+                }
+                
                 // Pagamento confirmado! Mostrar formulário de senha
                 setPaymentConfirmed(true);
                 setShowPixPayment(false);
@@ -381,6 +393,18 @@ export default function LandingPage() {
             const statusData = await response.json();
             if (statusData.paid && !paymentConfirmed) {
               console.log('✅ Pagamento já confirmado via webhook!');
+              
+              // Processar tracking CPA se aplicável
+              if (isCPASource && selectedPlan) {
+                console.log('🎯 Processando conversão CPA para TrafficStars (PIX - Webhook)');
+                try {
+                  await triggerConversion(email, selectedPlan.id, selectedPlan.price / 100);
+                  console.log('✅ Conversão CPA registrada com sucesso (PIX - Webhook)');
+                } catch (error) {
+                  console.error('❌ Erro ao registrar conversão CPA (PIX - Webhook):', error);
+                }
+              }
+              
               setPaymentConfirmed(true);
               setShowPixPayment(false);
               setShowPasswordForm(true);
@@ -423,6 +447,17 @@ export default function LandingPage() {
       if (response.ok) {
         const statusData = await response.json();
         if (statusData.paid && !paymentConfirmed) {
+          // Processar tracking CPA se aplicável
+          if (isCPASource && selectedPlan) {
+            console.log('🎯 Processando conversão CPA para TrafficStars (PIX - Manual)');
+            try {
+              await triggerConversion(email, selectedPlan.id, selectedPlan.price / 100);
+              console.log('✅ Conversão CPA registrada com sucesso (PIX - Manual)');
+            } catch (error) {
+              console.error('❌ Erro ao registrar conversão CPA (PIX - Manual):', error);
+            }
+          }
+          
           // Pagamento confirmado! Mostrar formulário de senha
           setPaymentConfirmed(true);
           setShowPixPayment(false);
