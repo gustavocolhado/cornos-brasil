@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { convertReaisToDollars, getExchangeRate } from '@/lib/utils'
 
 interface CPATrackingData {
   source: string | null
@@ -200,7 +201,18 @@ export function useCPATracking() {
 
     try {
       const postbackUrl = new URL('https://tsyndicate.com/api/v1/cpa/action')
-      postbackUrl.searchParams.set('value', amount.toString())
+      
+      // Converter valor de reais para dólares
+      const exchangeRate = getExchangeRate()
+      const valueInDollars = convertReaisToDollars(amount, exchangeRate)
+      
+      console.log('💰 Conversão de moeda para postback (hook):', {
+        valorOriginalBRL: amount,
+        taxaCambio: exchangeRate,
+        valorConvertidoUSD: valueInDollars
+      })
+      
+      postbackUrl.searchParams.set('value', valueInDollars.toString())
       postbackUrl.searchParams.set('clickid', trackingData.clickId)
       postbackUrl.searchParams.set('key', 'GODOiGyqwq6r1PxUDZTPjkyoyTeocItpUE7K')
       postbackUrl.searchParams.set('goalid', trackingData.goalId || '0')
@@ -211,7 +223,8 @@ export function useCPATracking() {
 
       console.log('🎯 Enviando postback para TrafficStars:', postbackUrl.toString())
       console.log('📊 Parâmetros do postback:', {
-        value: amount.toString(),
+        value: valueInDollars.toString(),
+        valueOriginalBRL: amount.toString(),
         clickid: trackingData.clickId,
         key: 'GODOiGyqwq6r1PxUDZTPjkyoyTeocItpUE7K',
         goalid: trackingData.goalId || '0',

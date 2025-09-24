@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { convertReaisToDollars, getExchangeRate } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
@@ -380,14 +381,25 @@ export async function POST(request: Request) {
 
             // Enviar postback para TrafficStars
             const postbackUrl = new URL('https://tsyndicate.com/api/v1/cpa/action');
-            postbackUrl.searchParams.set('value', paymentSession.amount.toString());
-            postbackUrl.searchParams.set('clickid', cpaTrackingData.clickId || '');
+            
+            // Converter valor de reais para dólares
+            const exchangeRate = getExchangeRate();
+            const valueInDollars = convertReaisToDollars(paymentSession.amount, exchangeRate);
+            
+            console.log('💰 Conversão de moeda para postback:', {
+              valorOriginalBRL: paymentSession.amount,
+              taxaCambio: exchangeRate,
+              valorConvertidoUSD: valueInDollars
+            });
+            
+            postbackUrl.searchParams.set('value', valueInDollars.toString());
+            postbackUrl.searchParams.set('clickid', (cpaTrackingData as any).clickId || '');
             postbackUrl.searchParams.set('key', 'GODOiGyqwq6r1PxUDZTPjkyoyTeocItpUE7K');
-            postbackUrl.searchParams.set('goalid', cpaTrackingData.goalId || '0');
+            postbackUrl.searchParams.set('goalid', (cpaTrackingData as any).goalId || '0');
             
             // Adicionar lead_code se disponível
-            if (cpaTrackingData.leadCode) {
-              postbackUrl.searchParams.set('lead_code', cpaTrackingData.leadCode);
+            if ((cpaTrackingData as any).leadCode) {
+              postbackUrl.searchParams.set('lead_code', (cpaTrackingData as any).leadCode);
             }
 
             console.log('🎯 Enviando postback CPA para TrafficStars (MercadoPago):', postbackUrl.toString());
@@ -410,11 +422,12 @@ export async function POST(request: Request) {
                 console.error('📄 Erro detalhado:', errorText);
                 console.error('🔗 URL do postback:', postbackUrl.toString());
                 console.error('📊 Parâmetros:', {
-                  value: paymentSession.amount.toString(),
-                  clickid: cpaTrackingData.clickId || '',
+                  value: valueInDollars.toString(),
+                  valueOriginalBRL: paymentSession.amount.toString(),
+                  clickid: (cpaTrackingData as any).clickId || '',
                   key: 'GODOiGyqwq6r1PxUDZTPjkyoyTeocItpUE7K',
-                  goalid: cpaTrackingData.goalId || '0',
-                  lead_code: cpaTrackingData.leadCode
+                  goalid: (cpaTrackingData as any).goalId || '0',
+                  lead_code: (cpaTrackingData as any).leadCode
                 });
               }
             } catch (postbackError) {
