@@ -514,3 +514,20 @@ model EmailCampaignConversion {
   @@index([convertedAt])
   @@map("email_campaign_conversions")
 }
+
+model TrafficStarsConversion {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  clickId         String   // ID do clique do TrafficStars
+  value           Float?   // Valor da conversão
+  price           Float?   // Preço da conversão
+  goalId          Int      @default(0) // ID do objetivo
+  leadCode        String?  // Código do lead
+  allowDuplicates Boolean  @default(false) // Permitir duplicatas
+  convertedAt     DateTime @default(now()) // Data da conversão
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([clickId])
+  @@index([convertedAt])
+  @@map("trafficstars_conversions")
+}

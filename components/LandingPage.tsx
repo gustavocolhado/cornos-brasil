@@ -8,6 +8,7 @@ import { FaFire, FaPlay, FaEye, FaHeart, FaClock, FaUsers, FaVideo, FaSearch, Fa
 import Image from 'next/image';
 import Container from '@/components/Container';
 import QRCode from 'qrcode';
+import CPATracking, { useCPAConversion } from '@/components/CPATracking';
 
 
 interface Plan {
@@ -33,6 +34,7 @@ interface PixResponse {
 export default function LandingPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { isCPASource, triggerConversion } = useCPAConversion();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
@@ -192,6 +194,17 @@ export default function LandingPage() {
         // Definir o email atual se não estiver definido
         if (!email) {
           setEmail(userEmail);
+        }
+        
+        // Processar tracking CPA se aplicável
+        if (isCPASource && selectedPlan) {
+          console.log('🎯 Processando conversão CPA para TrafficStars');
+          try {
+            await triggerConversion(userEmail, selectedPlan.id, selectedPlan.price / 100);
+            console.log('✅ Conversão CPA registrada com sucesso');
+          } catch (error) {
+            console.error('❌ Erro ao registrar conversão CPA:', error);
+          }
         }
         
         // Mostrar formulário de senha após processar payment
@@ -1714,6 +1727,9 @@ export default function LandingPage() {
           </div>
         </div>
       )}
+      
+      {/* Componente de tracking CPA */}
+      <CPATracking userId={session?.user?.id} />
     </div>
   );
 } 
