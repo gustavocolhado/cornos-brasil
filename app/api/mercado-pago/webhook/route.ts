@@ -345,6 +345,68 @@ export async function POST(request: Request) {
             console.error('❌ Erro ao registrar conversão de campanha:', campaignError);
           }
         }
+
+        // Processar tracking CPA se aplicável
+        try {
+          console.log('🎯 Verificando tracking CPA para MercadoPago...');
+          
+          // Buscar tracking CPA ativo para este usuário
+          const cpaTrackingData = await prisma.campaignTracking.findFirst({
+            where: {
+              userId: user.id,
+              converted: false,
+              source: {
+                startsWith: 'cpa'
+              }
+            },
+            orderBy: {
+              timestamp: 'desc'
+            }
+          });
+
+          if (cpaTrackingData) {
+            console.log('🎯 Tracking CPA encontrado para MercadoPago:', cpaTrackingData);
+            
+            // Marcar como convertido
+            await prisma.campaignTracking.update({
+              where: { id: cpaTrackingData.id },
+              data: {
+                converted: true,
+                convertedAt: new Date()
+              }
+            });
+
+            // Enviar postback para TrafficStars
+            const postbackUrl = new URL('https://tsyndicate.com/api/v1/cpa/action');
+            postbackUrl.searchParams.set('value', paymentSession.amount.toString());
+            postbackUrl.searchParams.set('clickid', cpaTrackingData.clickId || '');
+            postbackUrl.searchParams.set('key', 'GODOiGyqwq6r1PxUDZTPjkyoyTeocItpUE7K');
+            postbackUrl.searchParams.set('goalid', '0');
+
+            console.log('🎯 Enviando postback CPA para TrafficStars (MercadoPago):', postbackUrl.toString());
+
+            try {
+              const postbackResponse = await fetch(postbackUrl.toString(), {
+                method: 'GET',
+                headers: {
+                  'User-Agent': 'CPA-Tracking-MercadoPago/1.0'
+                }
+              });
+
+              if (postbackResponse.ok) {
+                console.log('✅ Postback CPA enviado com sucesso para TrafficStars (MercadoPago)');
+              } else {
+                console.error('❌ Erro ao enviar postback CPA para TrafficStars (MercadoPago):', postbackResponse.status);
+              }
+            } catch (postbackError) {
+              console.error('❌ Erro ao enviar postback CPA para TrafficStars (MercadoPago):', postbackError);
+            }
+          } else {
+            console.log('ℹ️ Nenhum tracking CPA encontrado para MercadoPago');
+          }
+        } catch (cpaError) {
+          console.error('❌ Erro ao processar tracking CPA (MercadoPago):', cpaError);
+        }
       } else {
         console.warn('❌ Nenhum usuário encontrado com o userId:', paymentSession.userId);
       }
