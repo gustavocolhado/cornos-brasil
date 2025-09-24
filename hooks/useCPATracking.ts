@@ -22,7 +22,7 @@ export function useCPATracking() {
     const source = searchParams.get('source')
     const campaign = searchParams.get('campaign')
     const clickId = searchParams.get('clickid')
-    const goalId = searchParams.get('goalid')
+    const goalId = searchParams.get('goalid') || '0'
     const value = searchParams.get('value')
     const price = searchParams.get('price')
     const leadCode = searchParams.get('lead_code')
