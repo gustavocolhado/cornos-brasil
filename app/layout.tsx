@@ -1,15 +1,21 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import './globals.css'
 import Providers from '@/components/Providers'
 import DynamicMetadata from '@/components/DynamicMetadata'
 import Analytics from '@/components/Analytics'
-import { getServerDomainConfig, generateDomainMetadata } from '@/lib/domain'
+import { getServerDomainConfig, generateDomainMetadata, generateViewport as generateDomainViewport } from '@/lib/domain'
 
 // Generate metadata based on current domain
 export async function generateMetadata(): Promise<Metadata> {
   const domainConfig = getServerDomainConfig()
   return generateDomainMetadata(domainConfig)
+}
+
+// Generate viewport based on current domain
+export async function generateViewport(): Promise<Viewport> {
+  const domainConfig = getServerDomainConfig()
+  return generateDomainViewport(domainConfig)
 }
 
 export default function RootLayout({
