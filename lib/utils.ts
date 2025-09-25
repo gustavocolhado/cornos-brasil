@@ -31,6 +31,6 @@ export function convertReaisToDollars(reais: number, exchangeRate: number = 5.50
  * @returns Taxa de câmbio atual
  */
 export function getExchangeRate(): number {
-  // Taxa fixa: 1 USD = 5.50 BRL (atualize conforme necessário)
+  
   return 5.50
 }
