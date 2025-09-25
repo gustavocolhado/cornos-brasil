@@ -18,10 +18,10 @@ export function normalizeEmail(email: string): string {
 /**
  * Converte valor de reais (BRL) para dólares (USD)
  * @param reais - Valor em reais
- * @param exchangeRate - Taxa de câmbio BRL para USD (padrão: 5.0)
+ * @param exchangeRate - Taxa de câmbio BRL para USD (padrão: 5.50)
  * @returns Valor convertido para dólares
  */
-export function convertReaisToDollars(reais: number, exchangeRate: number = 5.5): number {
+export function convertReaisToDollars(reais: number, exchangeRate: number = 5.50): number {
   return Number((reais / exchangeRate).toFixed(2))
 }
 
@@ -31,6 +31,6 @@ export function convertReaisToDollars(reais: number, exchangeRate: number = 5.5)
  * @returns Taxa de câmbio atual
  */
 export function getExchangeRate(): number {
-  // Taxa fixa: 1 USD = 5.00 BRL (atualize conforme necessário)
-  return 5.0
+  // Taxa fixa: 1 USD = 5.50 BRL (atualize conforme necessário)
+  return 5.50
 }
