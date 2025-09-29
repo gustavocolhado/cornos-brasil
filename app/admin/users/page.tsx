@@ -4,6 +4,23 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Search, Filter, MoreVertical, Edit, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import EditUserModal from '@/components/admin/EditUserModal'
+import DeleteUserModal from '@/components/admin/DeleteUserModal'
+
+interface DeletionSummary {
+  comments: number;
+  likes: number;
+  favorites: number;
+  history: number;
+  payments: number;
+  affiliateSales: number;
+  affiliateReferred: number;
+  withdrawalRequests: number;
+  campaignConversions: number;
+  paymentSessions: number;
+  emailLinks: number;
+  emailClicks: number;
+  emailConversions: number;
+}
 
 interface User {
   id: string
@@ -32,6 +49,9 @@ export default function AdminUsers() {
   const [filter, setFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [deleteSummary, setDeleteSummary] = useState<DeletionSummary | null>(null)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 10,
@@ -96,6 +116,46 @@ export default function AdminUsers() {
       user.id === updatedUser.id ? updatedUser : user
     ))
   }
+
+  const openDeleteModal = async (user: User) => {
+    setUserToDelete(user);
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}/summary`);
+      if (response.ok) {
+        const summary = await response.json();
+        setDeleteSummary(summary);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar resumo de exclusão:', error);
+      setDeleteSummary(null);
+    }
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setUserToDelete(null);
+    setDeleteSummary(null);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setUsers(users.filter(user => user.id !== userToDelete.id));
+        closeDeleteModal();
+      } else {
+        console.error('Erro ao deletar usuário');
+      }
+    } catch (error) {
+      console.error('Erro ao deletar usuário:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -241,7 +301,11 @@ export default function AdminUsers() {
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-1 text-slate-400 hover:text-rose-600 transition-colors">
+                        <button 
+                          onClick={() => openDeleteModal(user)}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          title="Deletar usuário"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -310,6 +374,14 @@ export default function AdminUsers() {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         onSave={handleSaveUser}
+      />
+
+      <DeleteUserModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDeleteUser}
+        summary={deleteSummary}
+        userName={userToDelete?.name || ''}
       />
     </div>
   )

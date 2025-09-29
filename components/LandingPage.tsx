@@ -9,6 +9,7 @@ import Image from 'next/image';
 import Container from '@/components/Container';
 import QRCode from 'qrcode';
 import CPATracking, { useCPAConversion } from '@/components/CPATracking';
+import AuthModal from './AuthModal';
 
 
 interface Plan {
@@ -37,6 +38,8 @@ export default function LandingPage() {
   const { isCPASource, triggerConversion } = useCPAConversion();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSubscriptionFlow, setIsSubscriptionFlow] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
@@ -589,68 +592,21 @@ export default function LandingPage() {
 
   const handlePlanSelect = (plan: Plan) => {
     setSelectedPlan(plan);
-    setShowModal(true);
-    setShowPaymentMethod(false);
+    setIsSubscriptionFlow(true);
+    if (!session) {
+      setShowAuthModal(true);
+    } else {
+      setShowModal(true);
+      setShowPaymentMethod(true);
+    }
     setShowPixPayment(false);
     setShowPasswordForm(false);
-    setEmail('');
+    setEmail(session?.user?.email || '');
     setPassword('');
     setConfirmPassword('');
     setPixData(null);
     setPaymentMethod(null);
     setError(null);
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !selectedPlan) return;
-
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Por favor, insira um email válido.');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Obter dados da campanha do localStorage
-      const storedCampaignData = localStorage.getItem('campaignData');
-      const campaignInfo = storedCampaignData ? JSON.parse(storedCampaignData) : referralData;
-
-      // Criar conta com email
-      const response = await fetch('/api/landing-page/create-account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          referralData: campaignInfo
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao criar conta');
-      }
-
-      const accountData = await response.json();
-      console.log('✅ Conta criada:', accountData);
-
-      // Salvar userId e email no localStorage para usar depois
-      localStorage.setItem('landingPageUserId', accountData.userId);
-      localStorage.setItem('landingPageEmail', email);
-
-      setShowPaymentMethod(true);
-    } catch (error) {
-      console.error('Erro:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao criar conta. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handlePaymentMethodSelect = (method: 'pix' | 'card') => {
@@ -936,6 +892,7 @@ export default function LandingPage() {
     setError(null);
     setIsCheckingPayment(false);
     setGeneratedQRCode(null);
+    setIsSubscriptionFlow(false);
   };
 
   const toggleFaq = (index: number) => {
@@ -981,6 +938,17 @@ export default function LandingPage() {
 
     return () => clearInterval(interval);
   }, [currentSlide]);
+
+  useEffect(() => {
+    if (session && isSubscriptionFlow) {
+      setShowAuthModal(false);
+      setShowModal(true);
+      setShowPaymentMethod(true);
+      if (session.user?.email) {
+        setEmail(session.user.email);
+      }
+    }
+  }, [session, isSubscriptionFlow]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col w-full">
@@ -1822,7 +1790,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               ) : (
-                // Formulário de email
+                // Tela de seleção de método de pagamento
                 <div>
                   <div className="text-center mb-6">
                     <div className="bg-neutral-800 rounded-lg p-4 mb-4">
@@ -1833,46 +1801,60 @@ export default function LandingPage() {
                       </div>
                     </div>
                     
-
+                    <p className="text-white text-sm">
+                      Escolha sua forma de pagamento preferida:
+                    </p>
                   </div>
 
-                  <form onSubmit={handleEmailSubmit} className="space-y-4">
-                    <div>
-                      <label htmlFor="email" className="block text-white text-sm font-medium mb-2">
-                        Seu E-mail
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-red-500"
-                        placeholder="Digite seu e-mail"
-                        required
-                      />
+                  {error && (
+                    <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3 mb-4">
+                      <p className="text-red-300 text-sm">{error}</p>
                     </div>
+                  )}
 
-                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
-                      <p className="text-blue-300 text-sm">
-                        Seu e-mail está 100% seguro, usaremos apenas para identificar seu cadastro e processar a assinatura.
-                      </p>
-                    </div>
-
+                  <div className="space-y-4">
+                    {/* Opção PIX */}
                     <button
-                      type="submit"
+                      onClick={() => handlePaymentMethodSelect('pix')}
                       disabled={isLoading}
-                      className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full bg-green-600 text-white font-bold py-4 rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                     >
-                      {isLoading ? (
+                      {isLoading && paymentMethod === 'pix' ? (
                         <>
                           <FaSpinner className="animate-spin" />
-                          Criando conta...
+                          Processando PIX...
                         </>
                       ) : (
-                        'Continuar'
+                        <>
+                          <FaMobile />
+                          Pagar com PIX
+                        </>
                       )}
                     </button>
-                  </form>
+
+                    {/* Opção Cartão */}
+                    <button
+                      onClick={() => handlePaymentMethodSelect('card')}
+                      disabled={isLoading}
+                      className="w-full bg-blue-600 text-white font-bold py-4 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                    >
+                      {isLoading && paymentMethod === 'card' ? (
+                        <>
+                          <FaSpinner className="animate-spin" />
+                          Redirecionando...
+                        </>
+                      ) : (
+                        <>
+                          <FaCreditCard />
+                          Pagar com Cartão
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="mt-6 text-center text-white text-xs space-y-1">
+                    <p>Cartão processado por: STRIPE</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1882,6 +1864,8 @@ export default function LandingPage() {
       
       {/* Componente de tracking CPA */}
       <CPATracking userId={session?.user?.id} />
+
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
-} 
+}
