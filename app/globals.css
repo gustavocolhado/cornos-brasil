@@ -48,7 +48,7 @@
   color-scheme: dark;
   
   /* Backgrounds */
-  --color-bg-primary: #0f0f0f;
+  --color-bg-primary: #000000;
   --color-bg-card: #1a1a1a;
   --color-bg-hover: #2a2a2a;
   --color-bg-input: #2d2d2d;
@@ -239,7 +239,7 @@ a {
 .container-content {
   max-width: 1980px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 2px;
 }
 
 @media (min-width: 640px) {

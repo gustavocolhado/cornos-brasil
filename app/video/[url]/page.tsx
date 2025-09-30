@@ -69,6 +69,7 @@ export default function VideoPage() {
   const [video, setVideo] = useState<VideoData | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentLikesCount, setCurrentLikesCount] = useState(0)
+  const [currentViewCount, setCurrentViewCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   // Buscar vídeos relacionados
@@ -106,6 +107,8 @@ export default function VideoPage() {
 
   // Buscar dados do vídeo
   useEffect(() => {
+    let isMounted = true
+
     const fetchVideo = async () => {
       try {
         setLoading(true)
@@ -118,11 +121,20 @@ export default function VideoPage() {
         }
         
         const videoData = await response.json()
-        setVideo(videoData)
-        setCurrentLikesCount(videoData.likesCount || 0)
+        if (isMounted) {
+          setVideo(videoData)
+          setCurrentLikesCount(videoData.likesCount || 0)
+          setCurrentViewCount(videoData.viewCount || 0)
+
+          // Registrar a visualização e atualizar o contador
+          recordView().then(newViewCount => {
+            if (isMounted && newViewCount !== null) {
+              setCurrentViewCount(newViewCount)
+            }
+          })
+        }
         
         // Verificar se o vídeo é premium e o usuário não é premium
-        // Aguardar o carregamento da sessão antes de verificar
         if (videoData.premium && session !== undefined && !session?.user?.premium) {
           console.log('🔒 Vídeo premium detectado, usuário não premium, redirecionando...')
           router.push('/premium')
@@ -130,47 +142,28 @@ export default function VideoPage() {
         }
       } catch (error) {
         console.error('Erro ao buscar vídeo:', error)
-        setError('Erro ao carregar vídeo')
-        // Fallback para dados mock se a API falhar
-        const mockVideo: VideoData = {
-          id: videoUrl,
-          url: videoUrl,
-          title: 'BOQUETE CASEIROS MAGRINHA SUGANDO PIROCA DURA DO MACHO',
-          duration: '1:52',
-          thumbnailUrl: '/thumbnails/video1.jpg',
-          videoUrl: '/videos/video1.mp4',
-          isIframe: false,
-          premium: false,
-          viewCount: 0,
-          likesCount: 1,
-          dislikesCount: 0,
-          category: ['BOQUETES', 'MAGRINHA'],
-          creator: 'Cremona',
-          uploader: {
-            id: '1',
-            name: 'Cremona',
-            username: 'cremona'
-          },
-          uploadTime: '2024-01-15T10:30:00Z',
-          description: 'Descrição do vídeo...',
-          tags: ['BOQUETES', 'MAGRINHA', 'CASEIROS']
+        if (isMounted) {
+          setError('Erro ao carregar vídeo')
         }
-        setVideo(mockVideo)
-        setCurrentLikesCount(mockVideo.likesCount)
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchVideo()
-  }, [videoUrl])
 
-  // Função para registrar visualização
-  const handleVideoLoad = useCallback(() => {
-    if (session?.user && video) {
-      recordView()
+    return () => {
+      isMounted = false
     }
-  }, [session, video, recordView])
+  }, [videoUrl, recordView, session, router])
+
+  // A função handleVideoLoad não é mais necessária para contar views,
+  // mas pode ser usada para outras lógicas no futuro.
+  const handleVideoLoad = useCallback(() => {
+    // Lógica a ser executada quando o vídeo carregar (ex: analytics)
+  }, [])
 
   // Função para lidar com like
   const handleLike = async () => {
@@ -428,7 +421,7 @@ export default function VideoPage() {
       />
       <Layout>
         <Header />
-      <main className="bg-theme-primary min-h-screen mt-5">
+      <main className="bg-theme-primary min-h-screen mt-5 overflow-x-hidden">
         <div className="container-content py-6">
           {/* Breadcrumbs */}
           <VideoBreadcrumbs 
@@ -436,9 +429,18 @@ export default function VideoPage() {
             category={video.category}
             videoUrl={video.url}
           />
+
+          {/* Banner Mobile - Acima do Vídeo */}
+              {!isPremium && (
+                <div className="hidden lg:hidden">
+                    <div className="w-full h-[100px] flex items-center justify-center">
+                      <AdIframe300x100 />
+                    </div>
+                </div>
+              )}
           
           {/* Top Bar */}
-          <div className="bg-theme-card border border-theme-primary text-theme-primary p-4 rounded-t-lg">
+          <div className="py-4">
             <div className="flex items-center justify-between">
               {video.creator ? (
                 <button
@@ -478,37 +480,29 @@ export default function VideoPage() {
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Main Video Player */}
             <div className="flex-1">
-              {/* Banner Mobile - Acima do Vídeo */}
-              {!isPremium && (
-                <div className="lg:hidden mb-4">
-                  <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                    <div className="w-full h-[100px] bg-theme-input rounded-lg flex items-center justify-center">
-                      <AdIframe300x100 />
-                    </div>
-                  </div>
-                </div>
-              )}
+              
 
-              <Player
-                videoUrl={video.isIframe ? video.videoUrl : getVideoUrl(video.videoUrl, video.isIframe || false)}
-                poster={getThumbnailUrl(video.thumbnailUrl, video.isIframe || false)}
-                title={video.title}
-                onError={(error) => console.error('Erro no player:', error)}
-                onLoad={handleVideoLoad}
-                autoPlay={false}
-                muted={false}
-                loop={false}
-                preload="auto"
-              />
+              <div className="-mx-4 sm:-mx-6 lg:mx-0">
+                <Player
+                  className="lg:rounded-lg lg:aspect-video"
+                  videoUrl={video.isIframe ? video.videoUrl : getVideoUrl(video.videoUrl, video.isIframe || false)}
+                  poster={getThumbnailUrl(video.thumbnailUrl, video.isIframe || false)}
+                  title={video.title}
+                  onError={(error) => console.error('Erro no player:', error)}
+                  onLoad={handleVideoLoad}
+                  autoPlay={false}
+                  muted={false}
+                  loop={false}
+                  preload="auto"
+                />
+              </div>
 
               {/* Banner Desktop - Abaixo do Vídeo */}
               {!isPremium && (
                 <div className="hidden lg:block mt-4">
-                  <div className="bg-theme-card border border-theme-primary rounded-lg p-4">
-                    <div className="w-full h-[90px] bg-theme-input rounded-lg flex items-center justify-center">
+                    <div className="w-full h-[90px] flex items-center justify-center">
                       <AdIframe728x90 />
                     </div>
-                  </div>
                 </div>
               )}
 
@@ -622,7 +616,7 @@ export default function VideoPage() {
                     <Eye className="w-5 h-5 text-theme-muted" />
                     <div>
                       <span className="text-sm text-theme-muted">Visualizações:</span>
-                      <span className="text-sm font-medium text-theme-primary ml-2">{video.viewCount.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-theme-primary ml-2">{currentViewCount.toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -639,23 +633,21 @@ export default function VideoPage() {
               {/* Banner Mobile - Abaixo das Informações */}
               {!isPremium && (
                 <div className="lg:hidden mt-4">
-                  <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                    <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                    <div className="w-full h-[250px] flex items-center justify-center">
                       <AdIframe300x250 />
                     </div>
-                  </div>
                 </div>
               )}
 
               {/* Vídeos Relacionados */}
-              <div className="bg-theme-card border border-theme-primary rounded-lg p-4 mt-4 mb-8">
+              <div className="py-2 mt-4 mb-8">
                 <h3 className="text-lg font-bold text-theme-primary mb-4">Vídeos Relacionados</h3>
                 {relatedLoading ? (
                   <div className="flex justify-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin text-theme-primary" />
                   </div>
                 ) : relatedVideos.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-1">
                     {relatedVideos.slice(0, 20).map((relatedVideo, index) => {
                       const items = []
                       
@@ -702,27 +694,21 @@ export default function VideoPage() {
 
             {/* Sidebar com Anúncios Desktop */}
             {!isPremium && (
-              <div className="hidden lg:block lg:w-80 space-y-4 mt-4">
+              <div className="hidden lg:block lg:w-80 space-y-4">
                 {/* Anúncio 1 - 300x250 */}
-                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                  <div className="w-full h-[250px] flex items-center justify-center">
                     <AdIframe300x250 />
                   </div>
-                </div>
 
                 {/* Anúncio 2 - 300x250 */}
-                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                  <div className="w-full h-[250px] flex items-center justify-center">
                     <AdIframe300x250 />
                   </div>
-                </div>
 
                 {/* Anúncio 3 - 300x250 */}
-                <div className="bg-theme-card border border-theme-primary rounded-lg p-3">
-                  <div className="w-full h-[250px] bg-theme-input rounded-lg flex items-center justify-center">
+                  <div className="w-full h-[250px] flex items-center justify-center">
                     <AdIframe300x250 />
                   </div>
-                </div>
               </div>
             )}
           </div>
@@ -739,4 +725,4 @@ export default function VideoPage() {
         </Layout>
       </>
     )
-} 
+}

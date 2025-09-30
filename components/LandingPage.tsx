@@ -983,12 +983,12 @@ export default function LandingPage() {
             ) : (
               // Usuário não logado
               <>
-                <Link 
-                  href="/login" 
+                <button 
+                  onClick={() => setShowAuthModal(true)}
                   className="px-3 py-2 md:px-6 md:py-3 bg-black text-white border border-white rounded text-sm md:text-base font-bold hover:bg-white hover:text-black transition"
                 >
                   ENTRAR
-                </Link>
+                </button>
                 <button 
                   onClick={scrollToPlans}
                   className="px-3 py-2 md:px-6 md:py-3 bg-red-600 text-white rounded text-sm md:text-base font-bold hover:bg-red-700 transition"
