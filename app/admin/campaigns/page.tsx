@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, Users, TrendingUp, DollarSign, Target } from 'lucide-react'
 
+const formatCurrency = (value: number) => {
+  // Se o valor for um número inteiro e maior que 100 (assumindo que valores menores que 100 são reais, e maiores são centavos)
+  if (Number.isInteger(value) && value >= 100) {
+    return (value / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, style: 'currency', currency: 'BRL' });
+  }
+  // Caso contrário, assume que já está em reais
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, style: 'currency', currency: 'BRL' });
+};
+
 interface Pagination {
   page: number
   limit: number
@@ -180,7 +189,7 @@ export default function AdminCampaigns() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">R$ {stats.totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalRevenue)}</div>
             <p className="text-xs text-slate-500">
               Receita gerada
             </p>
@@ -277,7 +286,7 @@ export default function AdminCampaigns() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-slate-600 font-medium">
-                        R$ {(stat.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {formatCurrency(stat.revenue || 0)}
                       </td>
                     </tr>
                   ))}
@@ -369,7 +378,7 @@ export default function AdminCampaigns() {
                     <td className="py-3 px-4 text-slate-600">{conv.source}</td>
                     <td className="py-3 px-4 text-slate-600">{conv.campaign}</td>
                     <td className="py-3 px-4 text-slate-600 font-medium">
-                      R$ {conv.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatCurrency(conv.amount)}
                     </td>
                     <td className="py-3 px-4 text-slate-600">
                       {new Date(conv.convertedAt).toLocaleString('pt-BR')}

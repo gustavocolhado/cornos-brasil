@@ -6,53 +6,10 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function CampaignPage() {
-  // Roda o hook para capturar dados específicos de CPA (como clickId) se presentes
+  console.log('🚀 CampaignPage carregada. Verificando logs...');
   useCPATracking();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const source = searchParams.get('source');
-    const campaign = searchParams.get('campaign');
-
-    // A página /c é para campanhas. Rastreia a visita se 'source' e 'campaign' existirem.
-    if (source && campaign) {
-      console.log('🎯 Visita de campanha detectada:', { source, campaign });
-
-      // Salva todos os parâmetros da URL no sessionStorage para uso posterior (ex: na conversão)
-      const allParams: { [key: string]: any } = {};
-      searchParams.forEach((value, key) => {
-        allParams[key] = value;
-      });
-
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cpa_tracking_data', JSON.stringify(allParams));
-        console.log('💾 Dados da campanha salvos no sessionStorage:', allParams);
-      }
-
-      // Enviar dados para a API de contagem de visitas
-      const trackVisit = async () => {
-        try {
-          await fetch('/api/campaigns/track', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              source: source,
-              campaign: campaign,
-            }),
-          });
-          console.log('📈 Visita registrada com sucesso.');
-        } catch (error) {
-          console.error('Erro ao registrar visita:', error);
-        }
-      };
-
-      trackVisit();
-    } else {
-      console.log('❌ Não é uma visita de campanha ou faltam parâmetros (source, campaign)');
-    }
-  }, [searchParams]);
+  // O useCPATracking já lida com a captura e salvamento dos dados da campanha.
+  // Não é necessário um useEffect adicional aqui para rastrear a visita ou salvar dados no sessionStorage.
 
   return (
     <>
