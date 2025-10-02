@@ -43,12 +43,9 @@ export default function LandingPage() {
   const [showEmailCaptureModal, setShowEmailCaptureModal] = useState(false);
   const [isSubscriptionFlow, setIsSubscriptionFlow] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showPaymentMethod, setShowPaymentMethod] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card' | null>(null);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pixData, setPixData] = useState<PixResponse | null>(null);
@@ -213,11 +210,9 @@ export default function LandingPage() {
           }
         }
         
-        // Mostrar formulário de senha após processar payment
-        setShowPasswordForm(true);
-        setShowModal(true); // Garantir que o modal está aberto
-        
-        console.log('✅ Modal de senha aberto');
+        // Pagamento confirmado, registrar conversão e redirecionar
+        await registerInternalConversion();
+        finalizePurchaseAndRedirect();
       } else {
         console.error('❌ Erro na resposta:', data);
         setError(data.error || 'Erro ao processar pagamento Stripe');
@@ -348,10 +343,11 @@ export default function LandingPage() {
                   }
                 }
                 
-                // Pagamento confirmado! Mostrar formulário de senha
+                // Pagamento confirmado! Registrar conversão e redirecionar
+                await registerInternalConversion();
                 setPaymentConfirmed(true);
                 setShowPixPayment(false);
-                setShowPasswordForm(true);
+                finalizePurchaseAndRedirect();
                 clearInterval(pollInterval);
               }
             }
@@ -411,9 +407,10 @@ export default function LandingPage() {
                 }
               }
               
+              await registerInternalConversion();
               setPaymentConfirmed(true);
               setShowPixPayment(false);
-              setShowPasswordForm(true);
+              finalizePurchaseAndRedirect();
             }
           }
         } catch (error) {
@@ -458,10 +455,10 @@ export default function LandingPage() {
                   }
                 }
                 
-                // Pagamento confirmado! Mostrar formulário de senha
+                // Pagamento confirmado! Registrar conversão e redirecionar
+                await registerInternalConversion();
                 setPaymentConfirmed(true);
-                setShowPasswordForm(true);
-                setShowModal(true);
+                finalizePurchaseAndRedirect();
                 clearInterval(pollInterval);
               }
             } else {
@@ -515,9 +512,9 @@ export default function LandingPage() {
                 }
               }
               
+              await registerInternalConversion();
               setPaymentConfirmed(true);
-              setShowPasswordForm(true);
-              setShowModal(true);
+              finalizePurchaseAndRedirect();
             }
           }
         } catch (error) {
@@ -568,10 +565,11 @@ export default function LandingPage() {
             }
           }
           
-          // Pagamento confirmado! Mostrar formulário de senha
+          // Pagamento confirmado! Registrar conversão e redirecionar
+          await registerInternalConversion();
           setPaymentConfirmed(true);
           setShowPixPayment(false);
-          setShowPasswordForm(true);
+          finalizePurchaseAndRedirect();
         } else {
           alert('Pagamento ainda não foi confirmado. Tente novamente em alguns instantes.');
         }
@@ -602,10 +600,7 @@ export default function LandingPage() {
       setShowPaymentMethod(true);
     }
     setShowPixPayment(false);
-    setShowPasswordForm(false);
     setEmail(session?.user?.email || '');
-    setPassword('');
-    setConfirmPassword('');
     setPixData(null);
     setPaymentMethod(null);
     setError(null);
@@ -848,91 +843,46 @@ export default function LandingPage() {
     return `R$ ${(price / 100).toFixed(2).replace('.', ',')}`;
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password || !confirmPassword || !email) return;
-    
-    if (password !== confirmPassword) {
-      setError('As senhas não coincidem!');
-      return;
-    }
-    
-    if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres!');
-      return;
-    }
+  const registerInternalConversion = async () => {
+    const storedData = sessionStorage.getItem('cpa_tracking_data');
+    const campaignInfo = storedData ? JSON.parse(storedData) : null;
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Atualizar senha e ativar premium
-      const response = await fetch('/api/landing-page/update-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-          confirmPassword: confirmPassword,
-          planId: selectedPlan?.id,
-          paymentId: pixData?.id || null,
-          amount: selectedPlan?.price || 0,
-          source: referralData?.source || null,
-          campaign: referralData?.campaign || null
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao atualizar senha');
-      }
-
-      const userData = await response.json();
-      
-      // Limpar dados do localStorage
-      localStorage.removeItem('landingPageUserId');
-      localStorage.removeItem('landingPageEmail');
-      localStorage.removeItem('campaignData');
-      
-      // Fazer login automático usando NextAuth
+    if (campaignInfo?.source && campaignInfo?.campaign && selectedPlan && email) {
+      console.log('📈 Registrando conversão interna para:', campaignInfo);
       try {
-        const result = await signIn('credentials', {
-          email: email,
-          password: password,
-          source: 'landing_page',
-          redirect: false,
+        await fetch('/api/campaigns/convert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: email,
+            source: campaignInfo.source,
+            campaign: campaignInfo.campaign,
+            planId: selectedPlan.id,
+            amount: selectedPlan.price,
+          }),
         });
-        
-        if (result?.error) {
-          console.error('Erro no login automático:', result.error);
-          // Se não conseguir fazer login automático, redirecionar para login
-          alert('Conta ativada com sucesso! Faça login para continuar.');
-          router.push('/login');
-        } else {
-          // Sucesso! Aguardar um pouco para o login ser processado
-          console.log('✅ Login automático realizado com sucesso!');
-          setTimeout(() => {
-            // Fechar o modal primeiro
-            closeModal();
-            // Redirecionar para a página inicial usando router
-            router.push('/');
-          }, 1000);
-        }
-      } catch (loginError) {
-        console.error('Erro no login automático:', loginError);
-        // Redirecionar para login em caso de erro
-        alert('Conta ativada com sucesso! Faça login para continuar.');
-        router.push('/login');
+        console.log('✅ Conversão interna registrada com sucesso.');
+      } catch (error) {
+        console.error('❌ Erro ao registrar conversão interna:', error);
       }
-      
-    } catch (error) {
-      console.error('Erro:', error);
-      setError(error instanceof Error ? error.message : 'Erro ao atualizar senha. Tente novamente.');
-    } finally {
-      setIsLoading(false);
+    } else {
+      console.log('ℹ️ Nenhuma informação de campanha encontrada para registrar conversão interna.');
     }
+  };
+
+  const finalizePurchaseAndRedirect = () => {
+    console.log('✅ Compra finalizada! Redirecionando para a página inicial...');
+    
+    // Limpar dados do localStorage
+    localStorage.removeItem('landingPageUserId');
+    localStorage.removeItem('landingPageEmail');
+    localStorage.removeItem('campaignData');
+    sessionStorage.removeItem('cpa_tracking_data');
+
+    alert('Assinatura ativada com sucesso! Você será redirecionado para a página inicial. Lembre-se de definir sua senha.');
+    
+    closeModal();
+    router.push('/');
   };
 
   const closeModal = () => {
@@ -940,10 +890,7 @@ export default function LandingPage() {
     setSelectedPlan(null);
     setShowPaymentMethod(false);
     setShowPixPayment(false);
-    setShowPasswordForm(false);
     setEmail('');
-    setPassword('');
-    setConfirmPassword('');
     setPixData(null);
     setTimeLeft(15 * 60);
     setPaymentConfirmed(false);
@@ -1552,7 +1499,7 @@ export default function LandingPage() {
             {/* Header do Modal */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-700">
               <h2 className="text-xl font-bold text-white">
-                {showPasswordForm ? 'Criar Conta' : showPixPayment ? 'Pagamento PIX' : 'Finalizar Assinatura'}
+                {showPixPayment ? 'Pagamento PIX' : 'Finalizar Assinatura'}
               </h2>
               <button
                 onClick={closeModal}
@@ -1564,96 +1511,7 @@ export default function LandingPage() {
 
             {/* Conteúdo do Modal */}
             <div className="p-6">
-              {showPasswordForm ? (
-                // Formulário de criação de senha
-                <div>
-                  <div className="text-center mb-6">
-                    <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-4">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <FaCheck className="text-green-500" />
-                        <span className="text-green-400 font-bold">Pagamento Confirmado!</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-white">{selectedPlan?.title}</h3>
-                      <p className="text-neutral-300 text-sm">{selectedPlan?.description}</p>
-                      <div className="text-2xl font-bold text-white mt-2">
-                        {selectedPlan && formatPrice(selectedPlan.price)}
-                      </div>
-                    </div>
-                    
-                    <p className="text-white text-sm">
-                      Agora crie sua senha para finalizar o cadastro e acessar imediatamente!
-                    </p>
-                  </div>
-
-                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                    <div>
-                      <label htmlFor="email" className="block text-white text-sm font-medium mb-2">
-                        E-mail (já preenchido)
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        disabled
-                        className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-300 cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="password" className="block text-white text-sm font-medium mb-2">
-                        Criar Senha
-                      </label>
-                      <input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-red-500"
-                        placeholder="Digite sua senha (mínimo 6 caracteres)"
-                        required
-                        minLength={6}
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="confirmPassword" className="block text-white text-sm font-medium mb-2">
-                        Confirmar Senha
-                      </label>
-                      <input
-                        type="password"
-                        id="confirmPassword"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-red-500"
-                        placeholder="Confirme sua senha"
-                        required
-                        minLength={6}
-                      />
-                    </div>
-
-                    <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
-                      <p className="text-green-300 text-sm">
-                        Sua conta será criada e você terá acesso imediato ao conteúdo premium!
-                      </p>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {isLoading ? (
-                        <>
-                          <FaSpinner className="animate-spin" />
-                          Criando conta...
-                        </>
-                      ) : (
-                        'Criar Conta e Acessar'
-                      )}
-                    </button>
-                  </form>
-                </div>
-              ) : showPixPayment && pixData ? (
+              {showPixPayment && pixData ? (
                 // Tela de pagamento PIX
                 <div>
                   <div className="text-center mb-6">

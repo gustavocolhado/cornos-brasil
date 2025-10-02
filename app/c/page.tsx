@@ -2,19 +2,31 @@
 
 import LandingPage from '@/components/LandingPage'
 import { useCPATracking } from '@/hooks/useCPATracking'
+import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function CampaignPage() {
-  const { isCPASource, trackingData } = useCPATracking()
+  // Roda o hook para capturar dados específicos de CPA (como clickId) se presentes
+  useCPATracking();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (isCPASource && trackingData?.source && trackingData?.campaign) {
-      console.log('🎯 CPA Tracking detectado:', trackingData);
+    const source = searchParams.get('source');
+    const campaign = searchParams.get('campaign');
 
-      // Salvar dados de tracking para uso posterior
+    // A página /c é para campanhas. Rastreia a visita se 'source' e 'campaign' existirem.
+    if (source && campaign) {
+      console.log('🎯 Visita de campanha detectada:', { source, campaign });
+
+      // Salva todos os parâmetros da URL no sessionStorage para uso posterior (ex: na conversão)
+      const allParams: { [key: string]: any } = {};
+      searchParams.forEach((value, key) => {
+        allParams[key] = value;
+      });
+
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cpa_tracking_data', JSON.stringify(trackingData));
-        console.log('💾 Dados salvos no sessionStorage');
+        sessionStorage.setItem('cpa_tracking_data', JSON.stringify(allParams));
+        console.log('💾 Dados da campanha salvos no sessionStorage:', allParams);
       }
 
       // Enviar dados para a API de contagem de visitas
@@ -26,8 +38,8 @@ export default function CampaignPage() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              source: trackingData.source,
-              campaign: trackingData.campaign,
+              source: source,
+              campaign: campaign,
             }),
           });
           console.log('📈 Visita registrada com sucesso.');
@@ -37,11 +49,10 @@ export default function CampaignPage() {
       };
 
       trackVisit();
-
     } else {
-      console.log('❌ CPA Tracking não ativo ou dados não encontrados');
+      console.log('❌ Não é uma visita de campanha ou faltam parâmetros (source, campaign)');
     }
-  }, [isCPASource, trackingData]);
+  }, [searchParams]);
 
   return (
     <>

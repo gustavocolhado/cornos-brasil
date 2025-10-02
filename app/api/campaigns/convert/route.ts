@@ -39,7 +39,24 @@ export async function POST(request: NextRequest) {
       actualUserId = user.id
     }
 
-    // Salvar dados da conversão em uma tabela separada se necessário
+    // Verificar se já existe uma conversão para este usuário e campanha
+    const existingConversion = await prisma.campaignConversion.findFirst({
+      where: {
+        userId: actualUserId,
+        campaign: campaign,
+      },
+    });
+
+    if (existingConversion) {
+      console.log(`✅ Conversão já registrada para o usuário ${actualUserId} na campanha ${campaign}.`);
+      return NextResponse.json({
+        success: true,
+        message: 'Conversão já registrada anteriormente',
+        conversionId: existingConversion.id,
+      });
+    }
+
+    // Se não houver conversão existente, criar uma nova
     const conversion = await prisma.campaignConversion.create({
       data: {
         userId: actualUserId,
@@ -47,15 +64,15 @@ export async function POST(request: NextRequest) {
         campaign,
         planId: planId || null,
         amount: amount || 0,
-        convertedAt: new Date()
-      }
-    })
+        convertedAt: new Date(),
+      },
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Conversão registrada com sucesso',
-      conversionId: conversion.id
-    })
+      conversionId: conversion.id,
+    });
 
   } catch (error) {
     console.error('❌ Erro ao registrar conversão:', error)

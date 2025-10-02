@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { X, Mail, ArrowRight } from 'lucide-react'
+import { FaGoogle } from 'react-icons/fa'
 
 interface EmailCaptureModalProps {
   isOpen: boolean
@@ -75,6 +77,23 @@ export default function EmailCaptureModal({ isOpen, onClose, onSubmit, isLoading
               {!isLoading && <ArrowRight size={20} />}
             </button>
           </form>
+
+          <div className="relative flex items-center justify-center my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-neutral-700"></div>
+            </div>
+            <div className="relative px-2 bg-neutral-900 text-sm text-neutral-400">
+              OU
+            </div>
+          </div>
+
+          <button
+            onClick={() => signIn('google')}
+            className="w-full bg-white text-black font-bold py-3 px-6 rounded-lg hover:bg-neutral-200 transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white flex items-center justify-center gap-3"
+          >
+            <FaGoogle />
+            Continuar com Google
+          </button>
         </div>
       </div>
     </>

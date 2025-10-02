@@ -170,6 +170,8 @@ export const authOptions: AuthOptions = {
             premium: user.premium,
             expireDate: user.premium ? user.expireDate : null,
             access: user.access,
+            // @ts-ignore
+            needsPasswordChange: !user.password, // Adiciona o campo para acionar o modal
           }
         }
       }
@@ -218,4 +220,4 @@ export const authOptions: AuthOptions = {
     },
   },
   debug: process.env.NODE_ENV === 'development',
-} 
+}
