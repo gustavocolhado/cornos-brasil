@@ -10,6 +10,7 @@ import Container from '@/components/Container';
 import QRCode from 'qrcode';
 import CPATracking, { useCPAConversion } from '@/components/CPATracking';
 import AuthModal from './AuthModal';
+import EmailCaptureModal from './EmailCaptureModal';
 
 
 interface Plan {
@@ -39,6 +40,7 @@ export default function LandingPage() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showEmailCaptureModal, setShowEmailCaptureModal] = useState(false);
   const [isSubscriptionFlow, setIsSubscriptionFlow] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -594,7 +596,7 @@ export default function LandingPage() {
     setSelectedPlan(plan);
     setIsSubscriptionFlow(true);
     if (!session) {
-      setShowAuthModal(true);
+      setShowEmailCaptureModal(true);
     } else {
       setShowModal(true);
       setShowPaymentMethod(true);
@@ -607,6 +609,63 @@ export default function LandingPage() {
     setPixData(null);
     setPaymentMethod(null);
     setError(null);
+  };
+
+  const handleEmailSubmit = async (submittedEmail: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/auth/register-temporary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: submittedEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ocorreu um erro.');
+      }
+
+      // Se o usuário já existe com senha, instrui a fazer login
+      if (response.status === 409) {
+        setError(data.error);
+        setShowEmailCaptureModal(false);
+        setShowAuthModal(true);
+        return;
+      }
+
+      // Se o usuário foi criado ou já existia como temporário, faz o login
+      if (data.tempAuth) {
+        const signInResult = await signIn('credentials', {
+          email: submittedEmail,
+          password: data.tempAuth,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          throw new Error('Erro ao iniciar sessão. Tente fazer o login manualmente.');
+        }
+        
+        // O useEffect que observa a session vai cuidar do resto do fluxo
+        setEmail(submittedEmail);
+        setShowEmailCaptureModal(false);
+
+      } else {
+         // Caso o usuário temporário já exista, mas a API não retorne tempAuth (lógica de segurança)
+         // A melhor abordagem é pedir para ele logar, pois não temos a senha temporária.
+         // Idealmente, a API deveria sempre retornar uma forma de logar ou resetar.
+         // Por agora, vamos assumir que o fluxo principal é a criação.
+         setError('Usuário já existe. Por favor, faça login.');
+         setShowEmailCaptureModal(false);
+         setShowAuthModal(true);
+      }
+
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePaymentMethodSelect = (method: 'pix' | 'card') => {
@@ -1866,6 +1925,13 @@ export default function LandingPage() {
       <CPATracking userId={session?.user?.id} />
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
+      <EmailCaptureModal
+        isOpen={showEmailCaptureModal}
+        onClose={() => setShowEmailCaptureModal(false)}
+        onSubmit={handleEmailSubmit}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

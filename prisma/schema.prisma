@@ -155,6 +155,7 @@ model User {
   promotionCode String?
   signupSource  String?  // Adicionando o campo signupSource
   tempPassword  Boolean  @default(false) // Flag para senha temporária
+  needsPasswordChange Boolean? @default(false) // Flag para forçar a mudança de senha
   acceptPromotionalEmails Boolean @default(true) // Aceita receber emails promocionais
   acceptTermsOfUse Boolean @default(false) // Aceita os termos de uso
   lastEmailSent DateTime? // Data do último email promocional enviado

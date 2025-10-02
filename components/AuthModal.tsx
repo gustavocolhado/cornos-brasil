@@ -17,13 +17,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { signIn } = useAuth()
   const [mode, setMode] = useState<AuthMode>('signup')
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState('')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -54,10 +52,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setAuthError('')
 
     if (mode === 'signup') {
-      if (formData.password !== formData.confirmPassword) {
-        setAuthError('As senhas não coincidem.')
-        return
-      }
       if (formData.password.length < 6) {
         setAuthError('A senha deve ter pelo menos 6 caracteres.')
         return
@@ -140,69 +134,70 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const renderSignupForm = () => (
     <>
-      <h2 className="text-3xl font-bold text-center text-gray-800">Criar uma conta</h2>
-      <p className="text-center text-gray-500 mb-6">Insira as informações para criar uma conta</p>
+      <h2 className="text-2xl font-bold text-center text-gray-900">Crie sua Conta</h2>
+      <p className="text-center text-gray-600 mb-8">Rápido e fácil, vamos começar.</p>
       
-      <div className="flex gap-4 mb-4">
-        <button onClick={() => handleSocialLogin('google')} disabled={isLoading} className="flex items-center justify-center gap-2 w-full border border-gray-300 rounded-lg py-2.5 px-4 hover:bg-gray-50 transition-colors">
-          <Image src="/imgs/icons/google.png" alt="Google" width={30} height={30} />
-          <span className="text-gray-700 font-medium">Google</span>
+      <div className="flex flex-col gap-4 mb-4">
+        <button 
+          onClick={() => handleSocialLogin('google')} 
+          disabled={isLoading} 
+          className="flex items-center justify-center gap-3 w-full bg-white border border-gray-300 rounded-lg py-3 px-4 hover:bg-gray-50 transition-all duration-300 ease-in-out shadow-sm"
+        >
+          <Image src="/imgs/icons/google.png" alt="Google" width={24} height={24} />
+          <span className="text-gray-800 font-semibold">Continuar com Google</span>
         </button>
       </div>
 
-      <div className="flex items-center my-4">
-        <hr className="w-full border-gray-300" />
-        <span className="px-2 text-gray-400 text-sm">ou</span>
-        <hr className="w-full border-gray-300" />
+      <div className="flex items-center my-6">
+        <hr className="w-full border-gray-200" />
+        <span className="px-3 text-gray-400 text-xs font-medium">OU</span>
+        <hr className="w-full border-gray-200" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
-          placeholder="seuemail@seuemail.com"
-          required
-        />
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Email</label>
           <input
-            type={showPassword ? 'text' : 'password'}
-            value={formData.password}
-            onChange={(e) => handleInputChange('password', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
-            placeholder="Digite sua senha"
+            type="email"
+            value={formData.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+            placeholder="seuemail@exemplo.com"
             required
           />
-           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
         </div>
-        <div className="relative">
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={formData.confirmPassword}
-            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
-            placeholder="Repita sua senha"
-            required
-          />
-          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Senha</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => handleInputChange('password', e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+              placeholder="Mínimo 6 caracteres"
+              required
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
         </div>
         
-        {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
+        {authError && <p className="text-red-600 text-sm text-center font-medium py-2">{authError}</p>}
 
-        <button type="submit" disabled={isLoading} className="w-full bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition-colors disabled:bg-red-300">
-          {isLoading ? 'Cadastrando...' : 'Cadastrar'}
+        <button 
+          type="submit" 
+          disabled={isLoading} 
+          className="w-full bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition-all duration-300 ease-in-out disabled:bg-red-400 disabled:cursor-not-allowed transform hover:scale-[1.02] shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          {isLoading ? 'Criando conta...' : 'Criar Conta'}
         </button>
       </form>
       
-      <p className="text-center text-sm text-gray-600 mt-6">
-        Já tem uma conta ?{' '}
-        <button onClick={() => setMode('login')} className="text-red-500 font-semibold hover:underline">
-          Faça login
+      <p className="text-center text-sm text-gray-600 mt-8">
+        Já possui uma conta?{' '}
+        <button onClick={() => setMode('login')} className="text-red-600 font-semibold hover:text-red-700 transition-colors">
+          Entrar
         </button>
       </p>
     </>
@@ -210,55 +205,69 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const renderLoginForm = () => (
     <>
-      <h2 className="text-3xl font-bold text-center text-gray-800">Premium</h2>
-      <p className="text-center text-gray-500 mb-6">Faça login para acessar o conteudo premium</p>
+      <h2 className="text-2xl font-bold text-center text-gray-900">Acesse sua Conta</h2>
+      <p className="text-center text-gray-600 mb-8">Bem-vindo de volta! Faça login para continuar.</p>
       
-      <div className="flex gap-4 mb-4">
-        <button onClick={() => handleSocialLogin('google')} disabled={isLoading} className="flex items-center justify-center gap-2 w-full border border-gray-300 rounded-lg py-2.5 px-4 hover:bg-gray-50 transition-colors">
-          <Image src="/imgs/icons/google.png" alt="Google" width={30} height={30} />
-          <span className="text-gray-700 font-medium">Google</span>
+      <div className="flex flex-col gap-4 mb-4">
+        <button 
+          onClick={() => handleSocialLogin('google')} 
+          disabled={isLoading} 
+          className="flex items-center justify-center gap-3 w-full bg-white border border-gray-300 rounded-lg py-3 px-4 hover:bg-gray-50 transition-all duration-300 ease-in-out shadow-sm"
+        >
+          <Image src="/imgs/icons/google.png" alt="Google" width={24} height={24} />
+          <span className="text-gray-800 font-semibold">Continuar com Google</span>
         </button>
       </div>
 
-      <div className="flex items-center my-4">
-        <hr className="w-full border-gray-300" />
-        <span className="px-2 text-gray-400 text-sm">ou</span>
-        <hr className="w-full border-gray-300" />
+      <div className="flex items-center my-6">
+        <hr className="w-full border-gray-200" />
+        <span className="px-3 text-gray-400 text-xs font-medium">OU</span>
+        <hr className="w-full border-gray-200" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
-          placeholder="seuemail@seuemail.com"
-          required
-        />
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Email</label>
           <input
-            type={showPassword ? 'text' : 'password'}
-            value={formData.password}
-            onChange={(e) => handleInputChange('password', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
-            placeholder="Digite sua senha"
+            type="email"
+            value={formData.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+            placeholder="seuemail@exemplo.com"
             required
           />
-           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Senha</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => handleInputChange('password', e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+              placeholder="Digite sua senha"
+              required
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
         </div>
         
-        {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
+        {authError && <p className="text-red-600 text-sm text-center font-medium py-2">{authError}</p>}
 
-        <button type="submit" disabled={isLoading} className="w-full bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 transition-colors disabled:bg-red-300">
-          {isLoading ? 'Logging in...' : 'Login'}
+        <button 
+          type="submit" 
+          disabled={isLoading} 
+          className="w-full bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition-all duration-300 ease-in-out disabled:bg-red-400 disabled:cursor-not-allowed transform hover:scale-[1.02] shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          {isLoading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
       
-      <p className="text-center text-sm text-gray-600 mt-6">
-        Ainda não tem uma conta ?{' '}
-        <button onClick={() => setMode('signup')} className="text-red-500 font-semibold hover:underline">
+      <p className="text-center text-sm text-gray-600 mt-8">
+        Não tem uma conta?{' '}
+        <button onClick={() => setMode('signup')} className="text-red-600 font-semibold hover:text-red-700 transition-colors">
           Cadastre-se
         </button>
       </p>
@@ -268,17 +277,19 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black bg-opacity-60 z-50"
+        className="fixed inset-0 bg-black bg-opacity-75 z-50 transition-opacity duration-300 ease-in-out"
         onClick={onClose}
+        aria-hidden="true"
       />
       
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative p-8">
+        <div className="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[95vh] overflow-y-auto relative p-10 transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-fade-in-scale">
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+            className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 transition-colors z-10 rounded-full p-1 hover:bg-gray-100"
+            aria-label="Fechar modal"
           >
-            <X size={24} />
+            <X size={22} />
           </button>
           
           {mode === 'signup' ? renderSignupForm() : renderLoginForm()}

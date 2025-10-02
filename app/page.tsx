@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
 import Header from '@/components/Header'
 import Creators from '@/components/Creators'
@@ -8,6 +9,7 @@ import PremiumBanner from '@/components/PremiumBanner'
 import SEOHead from '@/components/SEOHead'
 import AdIframe728x90 from '@/components/ads/728x90'
 import AdIframe300x100 from '@/components/ads/300x100'
+import SetPasswordModal from '@/components/SetPasswordModal'
 
 import { useSession } from 'next-auth/react'
 import { usePremiumStatus } from '@/hooks/usePremiumStatus'
@@ -17,6 +19,14 @@ import AdIframe300x250 from '@/components/ads/300x250'
 export default function Home() {
   const { data: session } = useSession()
   const { isPremium } = usePremiumStatus()
+  const [showSetPasswordModal, setShowSetPasswordModal] = useState(false)
+
+  useEffect(() => {
+    // @ts-ignore
+    if (session?.user?.needsPasswordChange) {
+      setShowSetPasswordModal(true)
+    }
+  }, [session])
 
   return (
     <>
@@ -97,6 +107,13 @@ export default function Home() {
         
         </main>
       </Layout>
+      {session?.user?.email && (
+        <SetPasswordModal
+          isOpen={showSetPasswordModal}
+          onClose={() => setShowSetPasswordModal(false)}
+          userEmail={session.user.email}
+        />
+      )}
     </>
   )
 }
