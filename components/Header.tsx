@@ -59,7 +59,7 @@ export default function Header() {
                 <MessageCircle size={24} />
               </button>
               <button 
-                onClick={status === 'authenticated' ? () => router.push('/profile') : openAuthModal}
+                onClick={status === 'authenticated' ? () => router.push('/profile') : () => openAuthModal()}
                 className="text-theme-primary hover:text-accent-red transition-colors"
               >
                 <User size={24} />
@@ -280,14 +280,14 @@ export default function Header() {
                 ) : (
                  <div className="flex items-center space-x-4">
                    <button 
-                     onClick={openAuthModal}
+                     onClick={() => openAuthModal('login')}
                      className="theme-btn-primary px-4 py-2 rounded"
                    >
                      ENTRAR
                    </button>
                    
                    <button 
-                     onClick={openAuthModal}
+                     onClick={() => openAuthModal('signup')}
                      className="border border-theme-primary hover:border-theme-secondary px-4 py-2 rounded text-theme-primary transition-colors"
                    >
                      CRIAR UMA CONTA

@@ -54,7 +54,7 @@ export default function Home() {
       />
       <Layout>
         <Header />
-        <main className="min-h-screen bg-theme-primary">
+        <main className="min-h-screen">
           {/* Mostrar PremiumBanner apenas para usuários não premium */}
           {!session?.user?.premium && <PremiumBanner />}
                     

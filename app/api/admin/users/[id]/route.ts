@@ -44,10 +44,6 @@ export async function DELETE(
         where: { userId: id },
         data: { userId: null },
       });
-      await prisma.campaignTracking.updateMany({
-        where: { userId: id },
-        data: { userId: null },
-      });
 
       // Finalmente, deletar o usuário
       await prisma.user.delete({ where: { id } });

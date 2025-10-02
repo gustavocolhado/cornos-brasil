@@ -8,21 +8,40 @@ export default function CampaignPage() {
   const { isCPASource, trackingData } = useCPATracking()
 
   useEffect(() => {
-    if (isCPASource && trackingData) {
-      console.log('🎯 CPA Tracking detectado:', trackingData)
-      console.log('📊 ClickId específico:', trackingData.clickId)
-      console.log('📊 Source específico:', trackingData.source)
-      console.log('📊 Campaign específico:', trackingData.campaign)
-      
+    if (isCPASource && trackingData?.source && trackingData?.campaign) {
+      console.log('🎯 CPA Tracking detectado:', trackingData);
+
       // Salvar dados de tracking para uso posterior
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cpa_tracking_data', JSON.stringify(trackingData))
-        console.log('💾 Dados salvos no sessionStorage')
+        sessionStorage.setItem('cpa_tracking_data', JSON.stringify(trackingData));
+        console.log('💾 Dados salvos no sessionStorage');
       }
+
+      // Enviar dados para a API de contagem de visitas
+      const trackVisit = async () => {
+        try {
+          await fetch('/api/campaigns/track', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              source: trackingData.source,
+              campaign: trackingData.campaign,
+            }),
+          });
+          console.log('📈 Visita registrada com sucesso.');
+        } catch (error) {
+          console.error('Erro ao registrar visita:', error);
+        }
+      };
+
+      trackVisit();
+
     } else {
-      console.log('❌ CPA Tracking não ativo ou dados não encontrados')
+      console.log('❌ CPA Tracking não ativo ou dados não encontrados');
     }
-  }, [isCPASource, trackingData])
+  }, [isCPASource, trackingData]);
 
   return (
     <>

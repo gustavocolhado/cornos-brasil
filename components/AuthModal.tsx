@@ -14,8 +14,8 @@ interface AuthModalProps {
 type AuthMode = 'login' | 'signup'
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { signIn } = useAuth()
-  const [mode, setMode] = useState<AuthMode>('signup')
+  const { signIn, initialAuthMode } = useAuth()
+  const [mode, setMode] = useState<AuthMode>(initialAuthMode)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState('')
@@ -123,12 +123,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
       document.body.style.overflow = 'hidden'
+      setMode(initialAuthMode); // Atualiza o modo quando o modal abre
     }
     return () => {
       document.removeEventListener('keydown', handleEscape)
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, initialAuthMode])
 
   if (!isOpen) return null
 
@@ -161,7 +162,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 text-gray-900"
             placeholder="seuemail@exemplo.com"
             required
           />
@@ -173,7 +174,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 text-gray-900"
               placeholder="Mínimo 6 caracteres"
               required
             />
@@ -232,7 +233,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 text-gray-900"
             placeholder="seuemail@exemplo.com"
             required
           />
@@ -244,7 +245,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all duration-200 text-gray-900"
               placeholder="Digite sua senha"
               required
             />

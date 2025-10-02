@@ -39,42 +39,6 @@ export async function POST(request: NextRequest) {
       actualUserId = user.id
     }
 
-    // Buscar o tracking da campanha mais recente para este usuário
-    const campaignTracking = await prisma.campaignTracking.findFirst({
-      where: {
-        source,
-        campaign,
-        converted: false
-      },
-      orderBy: {
-        timestamp: 'desc'
-      }
-    })
-
-    if (campaignTracking) {
-      // Marcar como convertido
-      await prisma.campaignTracking.update({
-        where: {
-          id: campaignTracking.id
-        },
-        data: {
-          converted: true,
-          convertedAt: new Date(),
-          userId: actualUserId
-        }
-      })
-
-      console.log('🎯 Conversão registrada:', {
-        campaignId: campaignTracking.id,
-        userId: actualUserId,
-        email: userId,
-        source,
-        campaign,
-        planId,
-        amount
-      })
-    }
-
     // Salvar dados da conversão em uma tabela separada se necessário
     const conversion = await prisma.campaignConversion.create({
       data: {
@@ -101,4 +65,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
