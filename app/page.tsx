@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Layout from '@/components/Layout'
 import Header from '@/components/Header'
 import Creators from '@/components/Creators'
@@ -20,13 +21,16 @@ export default function Home() {
   const { data: session } = useSession()
   const { isPremium } = usePremiumStatus()
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     // @ts-ignore
-    if (session?.user?.needsPasswordChange) {
+    if (session?.user?.needsPasswordChange && pathname === '/') {
       setShowSetPasswordModal(true)
+    } else {
+      setShowSetPasswordModal(false)
     }
-  }, [session])
+  }, [session, pathname])
 
   return (
     <>

@@ -196,7 +196,8 @@ export const authOptions: AuthOptions = {
         });
 
         if (dbUser) {
-          token.needsPasswordChange = dbUser.needsPasswordChange || !dbUser.password;
+          const calculatedNeedsPasswordChange = dbUser.needsPasswordChange || !dbUser.password;
+          token.needsPasswordChange = calculatedNeedsPasswordChange;
         }
       }
 
