@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { Session } from 'next-auth'
 import { useSession, signIn, signOut } from 'next-auth/react'
+import SetPasswordModal from '@/components/SetPasswordModal'
 
 interface AuthContextType {
   session: Session | null
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isPremium, setIsPremium] = useState(false)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [initialAuthMode, setInitialAuthMode] = useState<'login' | 'signup'>('signup');
+  const [isSetPasswordModalOpen, setIsSetPasswordModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -36,8 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       
       setIsPremium(isPremium)
+
+      // Abrir modal de definição de senha se necessário
+      if (user.needsPasswordChange && user.email) {
+        setIsSetPasswordModalOpen(true)
+      } else {
+        setIsSetPasswordModalOpen(false)
+      }
     } else {
       setIsPremium(false)
+      setIsSetPasswordModalOpen(false)
     }
   }, [session])
 
@@ -76,7 +86,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initialAuthMode,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {session?.user?.email && (
+        <SetPasswordModal
+          isOpen={isSetPasswordModalOpen}
+          onClose={() => setIsSetPasswordModalOpen(false)}
+          userEmail={session.user.email}
+        />
+      )}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
