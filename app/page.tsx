@@ -64,25 +64,29 @@ export default function Home() {
                     
           <Creators />
 
-          <Section>
-            <div className="hidden md:flex md:justify-center">
-              <AdIframe728x90 />
-            </div>
-            <div className="flex justify-center md:hidden">
-              <AdIframe300x100 />
-            </div>
-          </Section>
+          {!session?.user?.premium && (
+            <Section>
+              <div className="hidden md:flex md:justify-center">
+                <AdIframe728x90 />
+              </div>
+              <div className="flex justify-center md:hidden">
+                <AdIframe300x100 />
+              </div>
+            </Section>
+          )}
           
           <VideoSection />
 
-          <Section>
-            <div className="hidden md:flex md:justify-center">
-              <AdIframe728x90 />
-            </div>
-            <div className="flex justify-center md:hidden">
-              <AdIframe300x100 />
-            </div>
-          </Section>
+          {!session?.user?.premium && (
+            <Section>
+              <div className="hidden md:flex md:justify-center">
+                <AdIframe728x90 />
+              </div>
+              <div className="flex justify-center md:hidden">
+                <AdIframe300x100 />
+              </div>
+            </Section>
+          )}
           {/* SEO Content Section */}
           <Section className="bg-theme-card py-8 px-4">
             <div className="container w-full">

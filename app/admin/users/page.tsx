@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Search, Filter, MoreVertical, Edit, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import EditUserModal from '@/components/admin/EditUserModal'
 import DeleteUserModal from '@/components/admin/DeleteUserModal'
+import ViewUserModal from '@/components/admin/ViewUserModal'
+import { User } from '@/types/common'
 
 interface DeletionSummary {
   comments: number;
@@ -20,17 +22,6 @@ interface DeletionSummary {
   emailLinks: number;
   emailClicks: number;
   emailConversions: number;
-}
-
-interface User {
-  id: string
-  name: string
-  email: string
-  premium: boolean
-  created_at: string
-  update_at: string
-  access: number
-  expireDate?: string
 }
 
 interface Pagination {
@@ -50,6 +41,7 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false) // Novo estado para o modal de visualização
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const [deleteSummary, setDeleteSummary] = useState<DeletionSummary | null>(null)
   const [pagination, setPagination] = useState<Pagination>({
@@ -115,6 +107,16 @@ export default function AdminUsers() {
     setUsers(users.map(user => 
       user.id === updatedUser.id ? updatedUser : user
     ))
+  }
+
+  const handleViewUser = (user: User) => { // Nova função para abrir o modal de visualização
+    setSelectedUser(user)
+    setIsViewModalOpen(true)
+  }
+
+  const handleCloseViewModal = () => { // Nova função para fechar o modal de visualização
+    setSelectedUser(null)
+    setIsViewModalOpen(false)
   }
 
   const openDeleteModal = async (user: User) => {
@@ -291,7 +293,11 @@ export default function AdminUsers() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
-                        <button className="p-1 text-slate-400 hover:text-indigo-600 transition-colors">
+                        <button 
+                          onClick={() => handleViewUser(user)} // Adicionado onClick para abrir o modal de visualização
+                          className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                          title="Visualizar usuário"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button 
@@ -374,6 +380,13 @@ export default function AdminUsers() {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         onSave={handleSaveUser}
+      />
+
+      {/* Modal de Visualização */}
+      <ViewUserModal
+        user={selectedUser}
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
       />
 
       <DeleteUserModal
