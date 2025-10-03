@@ -170,8 +170,7 @@ export const authOptions: AuthOptions = {
             premium: user.premium,
             expireDate: user.premium ? user.expireDate : null,
             access: user.access,
-            // @ts-ignore
-            needsPasswordChange: !user.password, // Adiciona o campo para acionar o modal
+            needsPasswordChange: token.needsPasswordChange as boolean, // Usa o valor do token
           }
         }
       }
@@ -187,6 +186,18 @@ export const authOptions: AuthOptions = {
         token.expireDate = user.expireDate || null
         token.email = user.email
         token.access = user.access
+        // needsPasswordChange será definido no callback de sessão
+      }
+
+      // Se o token já tem um email, busca o usuário do DB para ter os dados mais recentes
+      if (token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: normalizeEmail(token.email as string) },
+        });
+
+        if (dbUser) {
+          token.needsPasswordChange = dbUser.needsPasswordChange || !dbUser.password;
+        }
       }
 
       // Atualiza o token quando o usuário faz login

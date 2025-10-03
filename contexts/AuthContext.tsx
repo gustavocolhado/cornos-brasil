@@ -41,11 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Abrir modal de definição de senha se necessário
       if (user.needsPasswordChange && user.email) {
+        console.log('User needs password change. Opening modal.', { email: user.email, needsPasswordChange: user.needsPasswordChange });
         setIsSetPasswordModalOpen(true)
       } else {
+        console.log('User does NOT need password change or email is missing.', { email: user.email, needsPasswordChange: user.needsPasswordChange });
         setIsSetPasswordModalOpen(false)
       }
     } else {
+      console.log('No session user found. Closing modal.');
       setIsPremium(false)
       setIsSetPasswordModalOpen(false)
     }
