@@ -319,10 +319,43 @@ export async function POST(request: Request) {
           paymentId: paymentId
         });
 
-        // Processar conversão de campanha se existir
+        // Processar conversão de campanha se existir (para campanhas de marketing)
+        if (paymentSession.source && paymentSession.campaign && payment) {
+          try {
+            // Verificar se já existe uma conversão para este usuário e campanha
+            const existingCampaignConversion = await prisma.campaignConversion.findFirst({
+              where: {
+                userId: user.id,
+                source: paymentSession.source,
+                campaign: paymentSession.campaign,
+              },
+            });
+
+            if (!existingCampaignConversion) {
+              // Registrar conversão da campanha
+              await prisma.campaignConversion.create({
+                data: {
+                  userId: user.id,
+                  source: paymentSession.source,
+                  campaign: paymentSession.campaign,
+                  planId: paymentSession.plan,
+                  amount: paymentSession.amount,
+                  convertedAt: new Date(),
+                },
+              });
+              console.log(`🎉 CONVERSÃO DE CAMPANHA REGISTRADA: ${user.email} - ${paymentSession.plan} - R$ ${paymentSession.amount} - Source: ${paymentSession.source}, Campaign: ${paymentSession.campaign}`);
+            } else {
+              console.log(`✅ Conversão de campanha já registrada para o usuário ${user.id} na campanha ${paymentSession.campaign}.`);
+            }
+          } catch (campaignError) {
+            console.error('❌ Erro ao registrar conversão de campanha:', campaignError);
+          }
+        }
+
+        // Processar conversão de campanha de email se existir
         if (paymentSession.campaignId && payment) {
           try {
-            // Registrar conversão da campanha
+            // Registrar conversão da campanha de email
             await prisma.emailCampaignConversion.create({
               data: {
                 campaignId: paymentSession.campaignId,
@@ -333,7 +366,7 @@ export async function POST(request: Request) {
               }
             });
 
-            // Atualizar contador de conversões na campanha
+            // Atualizar contador de conversões na campanha de email
             await prisma.emailCampaign.update({
               where: { id: paymentSession.campaignId },
               data: {
@@ -343,9 +376,9 @@ export async function POST(request: Request) {
               }
             });
 
-            console.log(`🎉 CONVERSÃO DE CAMPANHA REGISTRADA: ${user.email} - ${paymentSession.plan} - R$ ${paymentSession.amount} - Campanha: ${paymentSession.campaignId}`);
-          } catch (campaignError) {
-            console.error('❌ Erro ao registrar conversão de campanha:', campaignError);
+            console.log(`🎉 CONVERSÃO DE CAMPANHA DE EMAIL REGISTRADA: ${user.email} - ${paymentSession.plan} - R$ ${paymentSession.amount} - Campanha de Email: ${paymentSession.campaignId}`);
+          } catch (emailCampaignError) {
+            console.error('❌ Erro ao registrar conversão de campanha de email:', emailCampaignError);
           }
         }
 

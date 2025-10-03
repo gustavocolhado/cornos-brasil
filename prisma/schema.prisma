@@ -275,7 +275,9 @@ model PaymentSession {
   duration     Int?     // Duração em dias
   promotionCode String? // Código de promoção se aplicável
   affiliateId  String?  @db.ObjectId // ID do afiliado se aplicável
-  campaignId   String?  // ID da campanha se aplicável
+  campaignId   String?  // ID da campanha se aplicável (para email marketing)
+  source       String?  // Fonte da campanha (ex: cbr-01)
+  campaign     String?  // Nome da campanha (ex: teste)
   
   // Relacionamentos
   user         User     @relation(fields: [userId], references: [id])

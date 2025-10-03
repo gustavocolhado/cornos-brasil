@@ -122,6 +122,8 @@ export async function POST(request: NextRequest) {
         amount: value / 100, // Converter de centavos para reais
         userId: user.id,
         status: 'pending',
+        source: referralData?.source || null, // Adicionar source
+        campaign: referralData?.campaign || null, // Adicionar campaign
       },
     })
 
