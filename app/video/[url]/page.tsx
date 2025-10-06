@@ -281,78 +281,6 @@ export default function VideoPage() {
     }
   }
 
-  // Função para obter URL da thumbnail
-  const getThumbnailUrl = (url: string, isIframe: boolean) => {
-    if (isIframe) {
-      return url
-    }
-    
-    const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
-    if (!mediaUrl) {
-      console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
-      return url
-    }
-    
-    // Remove barra dupla se existir
-    const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
-    const cleanVideoUrl = url.startsWith('/') ? url : `/${url}`
-    
-    return `${cleanMediaUrl}${cleanVideoUrl}`
-  }
-
-  // Função para obter URL do vídeo
-  const getVideoUrl = (url: string, isIframe: boolean) => {
-    if (isIframe) {
-      return url
-    }
-    
-    const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
-    if (!mediaUrl) {
-      console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
-      return url
-    }
-    
-    // Remove barra dupla se existir
-    const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
-    const cleanVideoUrl = url.startsWith('/') ? url : `/${url}`
-    
-    return `${cleanMediaUrl}${cleanVideoUrl}`
-  }
-
-  // Função para obter URLs de vídeo para diferentes qualidades
-  const getVideoUrls = (url: string, isIframe: boolean) => {
-    if (isIframe) {
-      return {
-        '1080p': url,
-        '720p': url,
-        '480p': url,
-        '360p': url
-      }
-    }
-    
-    const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_URL
-    if (!mediaUrl) {
-      console.warn('NEXT_PUBLIC_MEDIA_URL não está configurada')
-      return {
-        '1080p': url,
-        '720p': url,
-        '480p': url,
-        '360p': url
-      }
-    }
-    
-    // Remove barra dupla se existir
-    const cleanMediaUrl = mediaUrl.endsWith('/') ? mediaUrl.slice(0, -1) : mediaUrl
-    const cleanVideoUrl = url.startsWith('/') ? url : `/${url}`
-    
-    return {
-      '1080p': `${cleanMediaUrl}${cleanVideoUrl}`,
-      '720p': `${cleanMediaUrl}${cleanVideoUrl}`,
-      '480p': `${cleanMediaUrl}${cleanVideoUrl}`,
-      '360p': `${cleanMediaUrl}${cleanVideoUrl}`
-    }
-  }
-
   // Função para lidar com clique no título (se tem criador, vai para criador)
   const handleTitleClick = async () => {
     if (video?.creator) {
@@ -376,19 +304,6 @@ export default function VideoPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <Layout>
-        <Header />
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="text-theme-primary flex items-center space-x-2">
-            <RefreshCw className="w-5 h-5 animate-spin" />
-            <span>Carregando vídeo...</span>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
 
   if (error || !video) {
     return (
@@ -409,7 +324,7 @@ export default function VideoPage() {
         title={video.title}
         description={video.description}
         thumbnailUrl={video.thumbnailUrl}
-        videoUrl={video.isIframe ? video.videoUrl : getVideoUrl(video.videoUrl, video.isIframe || false)}
+        videoUrl={video.videoUrl}
         duration={video.duration}
         uploadDate={video.uploadTime}
         creatorName={video.creator}
@@ -485,8 +400,8 @@ export default function VideoPage() {
               <div className="-mx-4 sm:-mx-6 lg:mx-0">
                 <Player
                   className="lg:rounded-lg lg:aspect-video"
-                  videoUrl={video.isIframe ? video.videoUrl : getVideoUrl(video.videoUrl, video.isIframe || false)}
-                  poster={getThumbnailUrl(video.thumbnailUrl, video.isIframe || false)}
+                  videoUrl={video.videoUrl}
+                  poster={video.thumbnailUrl}
                   title={video.title}
                   onError={(error) => console.error('Erro no player:', error)}
                   onLoad={handleVideoLoad}

@@ -126,9 +126,14 @@ export default function VideoJSPlayer({
   const getVideoType = (url: string) => {
     if (!url) return 'video/mp4'
     
-    // Verificar se é uma URL de embed
+    // Verificar se é uma URL de iframe da MediaDelivery
+    if (url.startsWith('https://iframe.mediadelivery.net/play/')) {
+      console.log('🎬 Player: URL de iframe da MediaDelivery detectada, usando iframe')
+      return 'iframe'
+    }
+    // Verificar se é uma URL de embed genérica
     if (url.includes('/embed/') || url.includes('embed')) {
-      console.log('🎬 Player: URL de embed detectada, usando iframe')
+      console.log('🎬 Player: URL de embed genérica detectada, usando iframe')
       return 'iframe'
     }
     
@@ -618,7 +623,7 @@ export default function VideoJSPlayer({
   const shouldUseIframe = getVideoType(videoUrl) === 'iframe'
 
   return (
-    <div className={`relative bg-black overflow-hidden ${className} h-80 md:h-full`}>
+    <div className={`relative ${className} h-80 md:h-full`}>
       {/* Loading Overlay removido - vídeo carrega direto */}
 
       {/* Iframe para embeds */}
