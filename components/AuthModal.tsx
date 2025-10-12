@@ -9,11 +9,12 @@ import Image from 'next/image'
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
+  onAuthSuccess?: () => void // Adicionando a propriedade opcional
 }
 
 type AuthMode = 'login' | 'signup'
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
   const { signIn, initialAuthMode } = useAuth()
   const [mode, setMode] = useState<AuthMode>(initialAuthMode)
   const [showPassword, setShowPassword] = useState(false)
@@ -71,11 +72,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           source: 'website'
         })
         
-        if (result?.error) {
-          setAuthError('Email ou senha incorretos.')
-        } else {
-          onClose()
-        }
+    if (result?.error) {
+      setAuthError('Email ou senha incorretos.')
+    } else {
+      onClose()
+      onAuthSuccess?.() // Chama onAuthSuccess se existir
+    }
       } else { // signup
         const response = await fetch('/api/auth/register', {
           method: 'POST',
@@ -106,6 +108,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             setAuthError('Conta criada, mas erro ao fazer login automático.')
           } else {
             onClose()
+            onAuthSuccess?.() // Chama onAuthSuccess se existir
           }
         }
       }

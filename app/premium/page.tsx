@@ -21,6 +21,7 @@ import PixPayment from '@/components/PixPayment'
 import Footer from '@/components/Footer'
 import { useCountry } from '@/hooks/useCountry'
 import CurrencySelector from '@/components/CurrencySelector'
+import AuthModal from '@/components/AuthModal'
 
 
 interface Plan {
@@ -115,6 +116,7 @@ export default function PremiumPage() {
   const [preferenceId, setPreferenceId] = useState<string | null>(null)
   const [campaignData, setCampaignData] = useState<any>(null)
   const [activePaymentProvider, setActivePaymentProvider] = useState<'mercadopago' | 'pushinpay'>('mercadopago')
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   // Capturar dados da campanha da URL
   useEffect(() => {
@@ -145,12 +147,6 @@ export default function PremiumPage() {
     }
   }, [])
 
-  // Redirecionar se não estiver autenticado
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/api/auth/signin')
-    }
-  }, [status, router])
 
   // Buscar provedor de pagamento ativo
   useEffect(() => {
@@ -170,9 +166,19 @@ export default function PremiumPage() {
   }, [])
 
   const handlePlanSelect = (plan: Plan) => {
+    if (!session) {
+      setIsAuthModalOpen(true)
+      return
+    }
     setSelectedPlan(plan)
     setPaymentMethod(null)
     setError(null)
+  }
+
+  const handleAuthSuccess = () => {
+    setIsAuthModalOpen(false)
+    // Opcional: redirecionar ou recarregar a página para refletir o status de autenticação
+    router.refresh()
   }
 
   const handlePaymentMethodSelect = (method: 'pix' | 'card') => {
@@ -270,9 +276,6 @@ export default function PremiumPage() {
     )
   }
 
-  if (status === 'unauthenticated') {
-    return null
-  }
 
   if (preferenceId && paymentMethod === 'pix') {
     return (
@@ -562,7 +565,12 @@ export default function PremiumPage() {
         </div>
       </div>
       <Footer />
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   )
 }
-
