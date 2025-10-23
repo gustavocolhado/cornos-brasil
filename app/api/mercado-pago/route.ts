@@ -13,12 +13,28 @@ const MERCADO_PAGO_API_URL = 'https://api.mercadopago.com/v1/payments';
 export async function POST(request: Request) {
   try {
     // Captura os dados da requisição, incluindo o paymentType
-    const { userId, amount, payerEmail, paymentType, promotionCode, sessionId } = await request.json();
+    const { userId, amount, payerEmail, paymentType, promotionCode } = await request.json();
 
     // Verifica a presença de todos os parâmetros, incluindo o paymentType
     if (!userId || !amount || !payerEmail || !paymentType) {
       return NextResponse.json({ error: 'Parâmetros ausentes.' }, { status: 400 });
     }
+
+    // 1. Criar uma PaymentSession inicial no banco de dados
+    const initialPaymentSession = await prisma.paymentSession.create({
+      data: {
+        userId: userId,
+        plan: paymentType,
+        amount: amount,
+        status: 'pending',
+        // Outros campos podem ser adicionados aqui se necessário
+      },
+    });
+
+    console.log('✅ PaymentSession inicial criada:', initialPaymentSession.id);
+
+    // O external_reference será o ID da PaymentSession para que o webhook possa encontrá-la
+    const externalReference = initialPaymentSession.id;
 
     // Verifica se o token de acesso do Mercado Pago está configurado
     if (!MERCADO_PAGO_ACCESS_TOKEN) {
@@ -40,6 +56,7 @@ export async function POST(request: Request) {
       payer: {
         email: payerEmail,
       },
+      external_reference: externalReference, // Adicionar o external_reference
     }, {
       headers: {
         Authorization: `Bearer ${MERCADO_PAGO_ACCESS_TOKEN}`,
@@ -64,16 +81,40 @@ export async function POST(request: Request) {
         status: paymentStatus
       });
 
-      // NÃO criar Payment aqui - será criado apenas quando o webhook confirmar o pagamento
-      // NÃO atualizar PaymentSession com paymentId aqui - será atualizado apenas quando o webhook confirmar
+      console.log('🔍 PIX criado no Mercado Pago:', {
+        paymentId,
+        userId,
+        plan: paymentType,
+        amount,
+        status: paymentStatus,
+        paymentSessionId: initialPaymentSession.id // Adicionar o ID da PaymentSession
+      });
 
-      // Apenas atualizar o usuário com as informações temporárias do PIX
+      // 2. Atualizar a PaymentSession com o paymentId e preferenceId
+      const updatedPaymentSession = await prisma.paymentSession.update({
+        where: { id: initialPaymentSession.id },
+        data: {
+          paymentId: paymentId,
+          preferenceId: paymentId.toString(), // Para PIX, preferenceId pode ser o mesmo que paymentId
+          status: paymentStatus, // Status inicial do Mercado Pago (geralmente 'pending')
+        },
+      });
+
+      console.log('✅ PaymentSession atualizada com paymentId e preferenceId:', {
+        paymentSessionId: updatedPaymentSession.id,
+        paymentId: paymentId, // Corrigido para usar paymentId
+        preferenceId: updatedPaymentSession.preferenceId,
+        status: updatedPaymentSession.status
+      });
+
+      // 3. Atualizar o usuário com as informações temporárias do PIX
       const updateResponse = await prisma.user.update({
         where: { id: userId },
         data: {
           paymentQrCodeUrl: qr_code, // Usar qr_code para o URL/código copia e cola
           paymentType: paymentType,
           paymentStatus: 'pending', // Status temporário até o webhook confirmar
+          paymentId: paymentId, // Adicionar paymentId ao usuário também
         },
       });
 

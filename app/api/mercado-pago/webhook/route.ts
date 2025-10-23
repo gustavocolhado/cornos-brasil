@@ -4,17 +4,34 @@ import { convertReaisToDollars, getExchangeRate } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const contentType = request.headers.get('content-type');
+    console.log('🔔 Webhook Mercado Pago - Content-Type:', contentType);
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (jsonError: any) {
+      const textBody = await request.text();
+      console.error('❌ Erro ao parsear JSON do webhook. Corpo bruto:', textBody);
+      throw new Error(`Erro ao parsear JSON do webhook: ${jsonError.message}. Corpo bruto: ${textBody}`);
+    }
+
+    console.log('🔔 Webhook Mercado Pago recebido (corpo completo):', JSON.stringify(body, null, 2)); // Log do corpo completo
     console.log('🔔 Webhook Mercado Pago recebido:', {
       action: body.action,
       paymentId: body.data?.id,
       status: body.data?.status,
-      date: body.date_created
+      date: body.date_created,
+      topic: body.topic, // Adicionar topic para depuração
+      externalReferenceWebhook: body.data?.external_reference // Adicionar external_reference do webhook
     });
 
     const { action, data, date_created } = body;
 
-    if (action === 'payment.updated') {
+    // Processar tanto 'payment.created' quanto 'payment.updated'
+    // A lógica de aprovação final será tratada pela verificação de status do paymentInfo
+    if (action === 'payment.updated' || action === 'payment.created') {
+      console.log(`🔔 Webhook acionado para ação: ${action}`); // Log para confirmar que entrou no bloco
       const paymentId = parseInt(data.id); // Converte o ID para número inteiro
 
       if (!paymentId) {
@@ -23,6 +40,7 @@ export async function POST(request: Request) {
       }
 
       console.log('🔍 Processando webhook para paymentId:', paymentId);
+      console.log('🔍 External reference do webhook (se houver):', body.data?.external_reference); // Adicionar log para external_reference do webhook
 
       // Primeiro, tentar buscar informações do pagamento na API do Mercado Pago
       let paymentInfo = null;
@@ -40,14 +58,31 @@ export async function POST(request: Request) {
           status: paymentInfo.status,
           transaction_amount: paymentInfo.transaction_amount,
           payer_email: paymentInfo.payer?.email,
-          external_reference: paymentInfo.external_reference
+          external_reference: paymentInfo.external_reference,
+          // Adicionar mais detalhes para depuração
+          point_of_interaction: paymentInfo.point_of_interaction,
+          status_detail: paymentInfo.status_detail
         });
-      } catch (apiError) {
-        console.error('❌ Erro ao buscar informações do pagamento na API:', apiError);
+      } catch (apiError: any) { // Capturar erro específico da API do Mercado Pago
+        if (apiError.status === 404 && apiError.message === 'Payment not found') {
+          console.warn(`⚠️ Pagamento ${paymentId} não encontrado na API do Mercado Pago. Ignorando processamento.`);
+          // Retornar 200 OK para o Mercado Pago, pois a notificação foi recebida, mas o pagamento não existe.
+          return NextResponse.json({ message: `Pagamento ${paymentId} não encontrado na API do Mercado Pago.` });
+        }
+        console.error('❌ Erro ao buscar informações do pagamento na API do Mercado Pago:', {
+          message: apiError.message,
+          status: apiError.status,
+          details: apiError.cause // Detalhes adicionais do erro
+        });
+        // Se não conseguir obter informações do pagamento, o webhook não pode prosseguir
+        return NextResponse.json({ error: 'Erro ao buscar informações do pagamento na API do Mercado Pago.' }, { status: 500 });
       }
 
       // Buscar PaymentSession usando diferentes estratégias
       let paymentSession = null;
+      console.log('🔍 Iniciando busca por PaymentSession...');
+      console.log('🔍 paymentId do webhook:', paymentId);
+      console.log('🔍 paymentInfo.external_reference da API:', paymentInfo?.external_reference);
 
       // 1. Tentar buscar por external_reference direto (formato: userId_plan_paymentSessionId)
       if (paymentInfo?.external_reference) {
@@ -389,9 +424,10 @@ export async function POST(request: Request) {
       console.log('ℹ️ Webhook ignorado - ação:', action);
     }
 
+    console.log('✅ Webhook processado com sucesso - finalizando requisição.'); // Log para confirmar o final do processamento
     return NextResponse.json({ message: 'Webhook processado com sucesso' });
   } catch (error) {
-    console.error('❌ Erro ao processar o webhook:', error);
-    return NextResponse.json({ error: 'Erro ao processar o webhook' }, { status: 500 });
+    console.error('❌ Erro fatal ao processar o webhook:', error); // Log de erro fatal
+    return NextResponse.json({ error: 'Erro fatal ao processar o webhook.' }, { status: 500 });
   }
 }
