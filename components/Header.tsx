@@ -84,7 +84,7 @@ export default function Header() {
               <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-sm">VIP</span>
               <span>{isPremium ? 'Premium' : 'Seja Premium'}</span>
             </a>
-            <a href="https://t.me/cornosbrasill" target="blank" className="flex items-center space-x-1.5 text-theme-primary font-medium">
+            <a href="https://t.me/cornosbrasill2" target="blank" className="flex items-center space-x-1.5 text-theme-primary font-medium">
               <Send size={18} />
               <span>Telegram</span>
             </a>
